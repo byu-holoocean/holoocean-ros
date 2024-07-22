@@ -1,0 +1,133 @@
+{
+    "name": "hovering_dynamics",
+    "package_name": "Ocean",
+    "world": "OpenWater",
+    "main_agent": "auv0",
+    "ticks_per_sec": 30,
+    "frames_per_sec": 250,
+    "draw_arrow": true,
+    "show_viewport": true,
+    "agents": [
+        {
+        "agent_name": "auv0",
+        "agent_type": "TorpedoAUV",
+        "sensors": [
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": true
+
+            },
+            {
+                "sensor_type": "DVLSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "VelSigma": [0.1,0.1,0.1,0.1]
+                }
+            },
+            {
+                "sensor_type": "IMUSensor",
+                "ros_publish": true,
+                "socket": "COM",
+                "configuration":{
+                    "AccelSigma": [0.01,0.01,0.01],
+                    "AngVelSigma": [0.01,0.01,0.01],
+                    "ReturnBias": true
+                }
+            },
+            {
+                "sensor_type": "GPSSensor",
+                "ros_publish": true,
+                "tick_every": 30,
+                "configuration":{
+                    "Sigma": [0.001,0.001,0.001],
+                    "Depth": 0.5,
+                    "DepthSigma": 0.05
+                }
+            },
+            {
+                "sensor_type": "LocationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "DepthSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "Sigma": 0.03
+                }
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "SidescanSonar",
+                "socket": "SonarSocket",
+                "Hz": 10,
+                "configuration": {
+                    "ViewRegion": true,
+                    "RangeBins": 2000,
+                    "Azimuth": 170,
+                    "RangeMin": 0.5,
+                    "RangeMax": 40,
+                    "AddSigma": 0.05,
+                    "MultSigma": 0.05,
+                    "InitOctreeRange": 50
+
+                }
+            }
+        ],
+        "control_scheme": 1,  
+        "location": [0,0,-10],
+        "rotation": [0,0,0],
+        "dynamics": 
+            {
+                "mass": 16,
+                "length": 1.6,
+                "rho": 1026,
+                "diam": 0.19,
+                "r_bg": [0, 0, 0.02],
+                "r_bb": [0, 0, 0],
+                "Cd": 0.42
+            }
+        ,
+        "actuator": 
+            {
+                "fin_area": 0.00665,
+                "deltaMax_fin_deg": 15,
+                "nMax": 1525
+            }
+        ,
+        "autopilot": 
+            {
+                "depth": {
+                    "wn_d_z": 0.2,
+                    "Kp_z": 0.1,
+                    "T_z": 100,
+                    "Kp_theta": 4.0,
+                    "Kd_theta": 2.3,
+                    "Ki_theta": 0.6,
+                    "K_w":  5.0,
+                    "theta_max_deg": 30
+                },
+                "heading": {
+                    "wn_d": 1.2,
+                    "zeta_d": 0.8,
+                    "r_max": 0.9,
+                    "lam": 0.1,
+                    "phi_b": 0.1,
+                    "K_d": 0.5,
+                    "K_sigma": 0.05
+                }
+            }
+            
+        }
+    ]
+}

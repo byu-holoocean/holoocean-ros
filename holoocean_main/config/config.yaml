@@ -1,0 +1,83 @@
+name: hovering_dynamics
+package_name: Ocean   
+world: PierHarbor     #Options: PierHarbor, Simple Underwater, Dam
+main_agent: auv0      
+ticks_per_sec: 30     #1/ticks_per_sec = Delta simulation time between simulation ticks
+frames_per_sec: 30    #Time warp = frames_per_sec / ticks_per_sec
+draw_arrow: true      #On screen arrows for visualizing depth and heading commands
+show_viewport: true   #Display window for visualizing simulation (slows down speed significantly)
+agents:
+  - agent_name: auv0
+    agent_type: TorpedoAUV  #TorpedoAUV is the only vehicle currently integrated with full dynamcis
+    control_scheme: 1  
+    location: [0, 0, -10]
+    rotation: [0, 0, 0]
+    sensors:
+      - sensor_type: DynamicsSensor  #Return true state 
+        configuration:
+          UseCOM: true
+          UseRPY: false
+        ros_publish: true
+      - sensor_type: DVLSensor    #Return velocity in the body frame and depth
+        ros_publish: true
+        configuration:
+          VelCov: [0.01, 0.01, 0.01, 0.01]
+      - sensor_type: IMUSensor
+        ros_publish: true
+        configuration:
+          AccelCov: [0.001, 0.001, 0.001]
+          AngVelCov: [0.001, 0.001, 0.001]
+      - sensor_type: GPSSensor
+        ros_publish: true
+        tick_every: 30
+        configuration:
+          Cov: [0.0001, 0.0001, 0.0001]
+          Depth: 0.5
+          DepthCov: 0.05
+      - sensor_type: LocationSensor
+        ros_publish: true
+      - sensor_type: RotationSensor
+        ros_publish: true
+      - sensor_type: DepthSensor
+        tick_every: 5
+        ros_publish: true
+        configuration:
+          Sigma: 0.01
+      - sensor_type: RotationSensor
+        ros_publish: true
+      - sensor_type: VelocitySensor
+        ros_publish: true
+      # - sensor_type: SidescanSonar
+      #   ros_publish: false
+      #   conifguration:
+      #     ViewRegion: true
+    dynamics: 
+      mass: 16
+      length: 1.6
+      rho: 1026
+      diam: 0.19
+      r_bg: [0, 0, 0.02]
+      r_bb: [0, 0, 0]
+      Cd: 0.42
+    actuator: 
+      fin_area: 0.00665
+      deltaMax_fin_deg: 15
+      nMax: 1525
+    autopilot: 
+      depth:
+        wn_d_z: 0.2
+        Kp_z: 0.1
+        T_z: 100
+        Kp_theta: 4.0
+        Kd_theta: 2.3
+        Ki_theta: 0.6
+        K_w: 5.0
+        theta_max_deg: 30
+      heading:
+        wn_d: 0.2
+        zeta_d: 0.8
+        r_max: 0.9
+        lam: 0.1
+        phi_b: 0.1
+        K_d: 0.5
+        K_sigma: 0.05
