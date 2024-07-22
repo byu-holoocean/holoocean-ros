@@ -21,8 +21,6 @@ def generate_launch_description():
 
     # List contents of the directory to debug
     
-    assert params_file.is_file(), f"Params file {params_file} does not exist"
-
     holoocean_namespace = 'holoocean'
 
     holoocean_main_node = launch_ros.actions.Node(
