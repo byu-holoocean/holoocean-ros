@@ -1,7 +1,7 @@
 #Import the create messgaes file
 # from holoocean_main.sensor_data_converter import convert_to_msg, sensor_keys, 
 from holoocean_main.sensor_data_encode import encoders, multi_publisher_sensors
-from holoocean.dynamics_controls.interface import VehicleInterface
+from holoocean_main.scripts.interface import VehicleInterface
 
 import rclpy
 from rclpy.node import Node

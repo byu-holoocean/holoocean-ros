@@ -1,16 +1,13 @@
 services:
   my_service:
     # build: path
-    image: frostlab/holoocean:ros-base
-    container_name: holo
-    user: root
-    # command: ["/bin/bash", "-c", "pip install /home/ue4/holoocean/client/ --no-build-isolation"]
+    image: frostlab/holoros:latest
+    container_name: holoocean
+    user: ue4
     runtime: nvidia
     environment:
       - DISPLAY=$DISPLAY
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean
-      - ~/frostlab/HoloOceanCustomDynamics:/home/ue4/holoocean
     tty: true
     privileged: true

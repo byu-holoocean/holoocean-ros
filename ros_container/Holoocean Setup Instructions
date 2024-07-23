@@ -1,0 +1,47 @@
+Setup ros2 holoocean workspace in a container:
+
+For ubuntu 22.04 follow the instructions here:
+https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_local
+
+Install cuda 12.5 and nvidia driver (my computer 555)
+
+Follow these instructions for the container toolkit:
+
+https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.16.0/install-guide.html
+
+Install docker: Docker version 20.10.17, build 100c701
+
+
+HOLOOCEAN:
+
+Sign the unreal agreements
+
+Clone the source code from: https://github.com/byu-holoocean/HoloOcean
+
+pip install the holoocean python package following installation instructions:
+	https://byu-holoocean.github.io/holoocean-docs/v1.0.0/index.html
+Install the holoocean world
+
+
+
+Install the ro2 packages into the ros2 workspace from 
+https://github.com/byu-holoocean/holoocean-ros/tree/main
+
+colcon build inside the ros2 workspace and run
+
+source install/setup.bash
+ros2 launch holoocean_main holoocean_full_launch.py
+
+
+
+#DOCKER setup:
+make the docker build command run the pip installation and copy the source code and world in?
+
+
+Make sure you have
+- container toolkit
+- nvidia driver
+- run xhost +
+
+
+
