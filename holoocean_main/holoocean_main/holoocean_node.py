@@ -1,7 +1,7 @@
 #Import the create messgaes file
 # from holoocean_main.sensor_data_converter import convert_to_msg, sensor_keys, 
 from holoocean_main.sensor_data_encode import encoders, multi_publisher_sensors
-from holoocean_main.scripts.interface import VehicleInterface
+from holoocean_main.interface import VehicleInterface
 
 import rclpy
 from rclpy.node import Node
@@ -62,10 +62,20 @@ class HolooceanNode(Node):
         self.sensors = []
 
         for agent in scenario["agents"]:
+            #For each agent the control surface commands can be published 
+            #TODO: Handle Multi agent scenario here
+            if "publish_commands" in agent and agent["publish_commands"]==True:
+                encoder_class = encoders.get("ControlCommand")
+                config = {}
+                config['sensor_name'] = "ControlCommand"
+                config['sensor_type'] = "ControlCommand"
+                config['agent_name'] = agent['agent_name']
+                self.sensors.append(encoder_class(config))
+
             for sensor in agent["sensors"]:
                 if sensor['ros_publish']:
                     sensor_type = sensor['sensor_type']
-
+                    
                     if sensor_type in multi_publisher_sensors:
                         for suffix in multi_publisher_sensors[sensor_type]:
                             full_type = f"{sensor['sensor_type']}{suffix}"

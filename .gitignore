@@ -7,3 +7,5 @@ log/
 
 !*.xml
 !*.json
+*.tar
+*.zip

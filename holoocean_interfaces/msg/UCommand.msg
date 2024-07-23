@@ -1,11 +1,10 @@
 # UCommand message
-# Contains timestamp and U_control command
+# Contains header and U_control command
 
-# Timestamp in nanoseconds
-int64 timestamp
+std_msgs/Header header
 
-# Fin commands angles degrees (-90, 90)
-float64[] fins
+# Fin commands angles degrees (-90, 90) set value to 360 if fin not in use
+float64[4] fin
 
 # Thruster commands (0-100)
 int64 thruster

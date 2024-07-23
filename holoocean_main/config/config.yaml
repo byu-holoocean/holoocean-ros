@@ -12,6 +12,7 @@ agents:
     control_scheme: 1  
     location: [0, 0, -10]
     rotation: [0, 0, 0]
+    publish_commands: true
     sensors:
       - sensor_type: DynamicsSensor  #Return true state 
         configuration:

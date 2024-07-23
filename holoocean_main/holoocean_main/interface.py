@@ -44,12 +44,13 @@ class VehicleInterface():
         self.accel = np.array(np.zeros(6),float)
 
         #Create vehicle object attached to holoocean agent with dynamic parameters 
-        #TODO: Change the vehicle that is being setup in the scenario. HUH? I dont understand this
-        self.vehicle = fourFinDep(scenario, 'auv0','depthHeadingAutopilot')
+        #TODO: Change the vehicle that is being setup from the parameters
+        self.vehicle = threeFinInd(scenario, 'auv0','depthHeadingAutopilot')
         # self.vehicle.set_control_mode('depthHeadingAutopilot') #In this mode PID controller calculates control commands (u_control)    
 
         #Create dynamics object passing in the vehicle created
         print('Ticks per sec: ', self.env._ticks_per_sec)
+        print("Time Warp:", self.time_warp)
         self.torpedo_dynamics = FossenDynamics(self.vehicle,self.env._ticks_per_sec)  
 
 
@@ -71,6 +72,12 @@ class VehicleInterface():
         state = self.env.step(self.accel) #To publish data to ros correctly, we should only tick the enviornment once each step
 
         self.accel = self.torpedo_dynamics.update(state) #Calculate accelerations to be applied to HoloOcean agent
+
+        #TODO: Handle the multi agent case for the control commands here
+        fins = np.rad2deg(self.torpedo_dynamics.u_actual[:-1])
+        thruster = self.torpedo_dynamics.u_actual[-1]
+
+        state["ControlCommand"] = np.append(fins,thruster)
 
         if self.draw:
             self.draw_arrow(state)

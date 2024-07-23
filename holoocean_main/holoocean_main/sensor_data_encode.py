@@ -2,15 +2,13 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange
+from holoocean_interfaces.msg import DVLSensorRange, UCommand
 
 
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
     'DynamicsSensor': ['Odom', 'Accel']
 }
-
-
 
 class SensorPublisher(ABC):
     def __init__(self, sensor_dict):
@@ -311,6 +309,28 @@ class GPSEncoder(SensorPublisher):
         msg.pose.covariance = self.cov
         return msg
 
+class CommandEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = UCommand
+        self.fin = [360.0] * 4
+
+
+    def encode(self, sensor_data):
+        msg = UCommand()
+        msg.fin = self.fin
+
+        #Control commands should be in a list with fins first and thruster last value in list (max 4 fins)
+        fin_count = len(sensor_data) - 1
+
+        for i in range(fin_count):
+            msg.fin[i] = float(sensor_data[i])
+        
+        msg.thruster = int(sensor_data[-1])
+
+        return msg
+
 # Define other encoders similarly...
 
 
@@ -325,5 +345,6 @@ encoders = {
     'DynamicsSensorOdom': DynamicsEncoder,
     'DynamicsSensorAccel': DynamicsAccelEncoder,
     'GPSSensor': GPSEncoder,
+    'ControlCommand': CommandEncoder,
     # Add other sensor type encoders here...
 }
