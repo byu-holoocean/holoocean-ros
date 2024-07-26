@@ -1,6 +1,6 @@
 name: hovering_dynamics
 package_name: Ocean   
-world: PierHarbor     #Options: PierHarbor, Simple Underwater, Dam
+world: PierHarbor     #Options: PierHarbor, Simple Underwater, Dam, OpenWater
 main_agent: auv0      
 ticks_per_sec: 30     #1/ticks_per_sec = Delta simulation time between simulation ticks
 frames_per_sec: 30    #Time warp = frames_per_sec / ticks_per_sec
