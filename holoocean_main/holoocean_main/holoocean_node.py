@@ -1,7 +1,4 @@
-#Import the create messgaes file
-# from holoocean_main.sensor_data_converter import convert_to_msg, sensor_keys, 
-from holoocean_main.sensor_data_encode import encoders, multi_publisher_sensors
-from holoocean_main.interface import VehicleInterface
+from holoocean_main.HSD_torpedo_interface import VehicleInterface
 
 import rclpy
 from rclpy.node import Node
@@ -35,7 +32,6 @@ class HolooceanNode(Node):
 
         #TODO: Make sure it doesnt tick to fast
         #Tick Timer
-        #TODO: Paramter from yaml
         period = self.interface.get_warp_period()
         print("Time Warp Period:", period)
         self.timer = self.create_timer(period, self.tick_callback)
@@ -48,49 +44,8 @@ class HolooceanNode(Node):
         #TODO: Controller use sensor data instead of simulation data
         self.interface.send_command(msg.depth,msg.heading,msg.speed)
         
-
-                   
     def sensor_publisher_create(self):
-        scenario = self.interface.get_scenario()  # Get full scenario from environment
-
-        if len(scenario["agents"]) > 1:
-            self.multi_agent_scenario = True
-            print("Give sensors unique names that are reported on multiple agents")
-        else:
-            self.multi_agent_scenario = False
-
-        self.sensors = []
-
-        for agent in scenario["agents"]:
-            #For each agent the control surface commands can be published 
-            #TODO: Handle Multi agent scenario here
-            if "publish_commands" in agent and agent["publish_commands"]==True:
-                encoder_class = encoders.get("ControlCommand")
-                config = {}
-                config['sensor_name'] = "ControlCommand"
-                config['sensor_type'] = "ControlCommand"
-                config['agent_name'] = agent['agent_name']
-                self.sensors.append(encoder_class(config))
-
-            for sensor in agent["sensors"]:
-                if sensor['ros_publish']:
-                    sensor_type = sensor['sensor_type']
-                    
-                    if sensor_type in multi_publisher_sensors:
-                        for suffix in multi_publisher_sensors[sensor_type]:
-                            full_type = f"{sensor['sensor_type']}{suffix}"
-                            full_name = f"{sensor['sensor_name']}{suffix}"
-                            
-                            encoder_class = encoders.get(full_type)
-                            sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
-                            sensor_copy['sensor_name'] = full_name
-                            sensor_copy['agent_name'] = agent['agent_name']
-
-                            self.sensors.append(encoder_class(sensor_copy))
-                    else:
-                        sensor['agent_name'] = agent['agent_name']
-                        encoder = encoders[sensor['sensor_type']]
-                        self.sensors.append(encoder(sensor))
+        self.sensors = self.interface.create_sensor_list()
 
         self.create_publishers()
 
@@ -98,32 +53,9 @@ class HolooceanNode(Node):
         for sensor in self.sensors:
             sensor.publisher = self.create_publisher(sensor.message_type, sensor.name, 10)
                    
-        
     def publish_sensor_data(self, state):
-        
-        for sensor in self.sensors:
-
-            try:
-                if self.multi_agent_scenario:
-                    msg = sensor.encode(state[sensor.agent_name][sensor.name])
-
-                else:
-                    msg = sensor.encode(state[sensor.type])
-
-                # Header
-                msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
-                msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
-
-                sensor.publisher.publish(msg)
-            except KeyError:
-                # Handle the case where sensor data is not available
-                # self.get_logger().info(f"No data for sensor: {sensor['sensor_name']}")
-                pass
-            except Exception as e:
-                # Handle other exceptions
-                self.get_logger().error(f"Error processing sensor: {sensor.name}, type: {sensor.type}, error: {str(e)}")
+        self.interface.publish_sensor_data(state)
             
-
     def adjust_timer(self, new_period):
         self.get_logger().info(f'Adjusting timer period to {new_period} seconds')
         self.timer.cancel()
