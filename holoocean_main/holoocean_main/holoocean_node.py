@@ -1,4 +1,4 @@
-from holoocean_main.HSD_torpedo_interface import VehicleInterface
+from holoocean_main.holoocean_main.holoocean_interface import VehicleInterface
 
 import rclpy
 from rclpy.node import Node
