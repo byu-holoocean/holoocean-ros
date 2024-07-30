@@ -24,9 +24,9 @@ def generate_launch_description():
     holoocean_namespace = 'holoocean'
 
     holoocean_main_node = launch_ros.actions.Node(
-        name='holoocean_node',
+        name='torpedo_node',
         package='holoocean_main',
-        executable='holoocean_node',  
+        executable='torpedo_node',  
         namespace=holoocean_namespace,
         output='screen',
         emulate_tty=True,

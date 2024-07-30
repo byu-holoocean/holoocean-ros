@@ -27,6 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'holoocean_node = holoocean_main.holoocean_node:main',
+            'torpedo_node = holoocean_main.torpedo_node:main',
             'state_estimate = holoocean_main.RK45_state_est:main',
             'command_node = holoocean_main.command_node:main'
         ],

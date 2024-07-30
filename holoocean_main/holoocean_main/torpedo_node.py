@@ -1,4 +1,4 @@
-from holoocean_main.holoocean_main.holoocean_interface import HolooceanInterface
+from holoocean_main.holoocean_interface import HolooceanInterface
 from holoocean.vehicle_dynamics import *
 from holoocean.dynamics import *
 
@@ -9,18 +9,24 @@ from holoocean_interfaces.msg import HSD
 from std_msgs.msg import Header
 
 
-class HolooceanNode(Node):
+class TorpedoNode(Node):
     
     def __init__(self):
-        super().__init__('holoocean_node')
+        super().__init__('torpedo_node')
         
+        ######## START HOLOOCEAN INTERFACE ###########
         self.declare_parameter('params_file', '')
         
         file_path = self.get_parameter('params_file').get_parameter_value().string_value
 
         self.interface = HolooceanInterface(file_path)
+
+        self.create_publishers() #Holoocean Publishers
+        self.set_timing() #Connect holocean timing to ros timing
+
+        self.accel = np.array(np.zeros(6),float)
         
-        #Create list of sensor publishers that have ros_publish=True based on scenario:
+        ######## CUSTOM SUBSCRIBERS ############
         
         #Depth heading subscriber:
         self.subscription = self.create_subscription(
@@ -30,22 +36,20 @@ class HolooceanNode(Node):
             10
         )
 
+        ######### CUSTOM SIMULATION INIT ########
         self.draw = False
         if "draw_arrow" in self.interface.scenario:
             self.draw = self.interface.scenario["draw_arrow"]
 
-        self.accel = np.array(np.zeros(6),float)
         #Create vehicle object attached to holoocean agent with dynamic parameters 
         #TODO: Change the vehicle that is being setup from the parameters
         self.vehicle = threeFinInd(self.interface.scenario, 'auv0','depthHeadingAutopilot')
         self.torpedo_dynamics = FossenDynamics(self.vehicle,self.interface.get_tick_rate())  
 
-        self.create_publishers()
-        self.set_timing()
    
     def tick_callback(self):
         #Tick the envionment and publish data as many times as requested
-        state = self.interface.tick()
+        state = self.interface.tick(self.accel)
     
         self.accel = self.torpedo_dynamics.update(state) #Calculate accelerations to be applied to HoloOcean agent
 
@@ -62,8 +66,6 @@ class HolooceanNode(Node):
 
     def callback_set_controller(self, msg):
         # self.get_logger().info('Controller Received: {}'.format(msg))
-        #TODO: Change speed to a m/s controller maybe use DVL?
-        #TODO: Controller use sensor data instead of simulation data
         self.vehicle.set_goal(msg.depth, msg.heading, msg.speed)     #Changes depth (positive depth), heading, thruster RPM goals for controller
 
     def create_publishers(self):
@@ -71,7 +73,7 @@ class HolooceanNode(Node):
             sensor.publisher = self.create_publisher(sensor.message_type, sensor.name, 10)
             
     def draw_arrow(self, state):
-        # For plotting and arrows 
+        # For plotting HSD and arrows 
         depth = self.vehicle.ref_z
         heading = self.vehicle.ref_psi
 
@@ -102,15 +104,10 @@ class HolooceanNode(Node):
         
         self.get_logger().info('Tick Started')
 
-    def adjust_timer(self, new_period):
-        self.get_logger().info(f'Adjusting timer period to {new_period} seconds')
-        self.timer.cancel()
-        self.timer = self.create_timer(new_period, self.tick_callback)
- 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = HolooceanNode()
+    node = TorpedoNode()
     
     rclpy.spin(node)
 

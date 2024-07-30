@@ -1,6 +1,6 @@
 name: hovering_dynamics
 package_name: Ocean   
-world: PierHarbor     #Options: PierHarbor, Simple Underwater, Dam, OpenWater
+world: OpenWater     #Options: PierHarbor, Simple Underwater, Dam, OpenWater
 main_agent: auv0      
 ticks_per_sec: 30     #1/ticks_per_sec = Delta simulation time between simulation ticks
 frames_per_sec: 30    #Time warp = frames_per_sec / ticks_per_sec
@@ -10,7 +10,7 @@ agents:
   - agent_name: auv0
     agent_type: TorpedoAUV  #TorpedoAUV is the only vehicle currently integrated with full dynamcis
     control_scheme: 1  
-    location: [0, 0, -10]
+    location: [0, 0, -30]
     rotation: [0, 0, 0]
     publish_commands: true
     sensors:
@@ -62,7 +62,7 @@ agents:
       Cd: 0.42
     actuator: 
       fin_area: 0.00665
-      deltaMax_fin_deg: 15
+      deltaMax_fin_deg: 25
       nMax: 1525
     autopilot: 
       depth:

@@ -33,7 +33,6 @@ class HolooceanInterface():
 
         self.sensors = self.create_sensor_list()
 
-
     def create_sensor_list(self):
         scenario = self.scenario
 
