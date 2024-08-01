@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 
-from holoocean_interfaces.msg import HSD
+from std_msgs.msg import Float64
 import numpy as np
 
 from pathlib import Path
@@ -27,7 +27,9 @@ class CommandExample(Node):
 
         print("Time Warp:", self.time_warp)
 
-        self.publisher_ = self.create_publisher(HSD, 'desiredHSD', 10)
+        self.depth_publisher = self.create_publisher(Float64, 'depth', 10)
+        self.heading_publisher = self.create_publisher(Float64, 'heading', 10)
+        self.speed_publisher = self.create_publisher(Float64, 'speed', 10)
         
         self.use_random = False
         self.sequence_index = 0
@@ -82,11 +84,15 @@ class CommandExample(Node):
         self.get_logger().info(f'New Setpoint: {self.depth}, Heading: {self.heading}, Speed: {self.speed}')
 
     def publish_callback(self):
-        msg = HSD()
-        msg.depth = self.depth
-        msg.heading = self.heading
-        msg.speed = self.speed
-        self.publisher_.publish(msg)
+        depth_msg = Float64()
+        depth_msg.data = self.depth
+        self.depth_publisher.publish(depth_msg)
+        heading_msg = Float64()
+        heading_msg.data = self.heading
+        self.heading_publisher.publish(heading_msg)
+        speed_msg = Float64()
+        speed_msg.data = self.speed
+        self.speed_publisher.publish(speed_msg)
 
 
 def main(args=None):

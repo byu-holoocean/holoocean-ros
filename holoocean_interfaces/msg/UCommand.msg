@@ -4,6 +4,7 @@
 std_msgs/Header header
 
 # Fin commands angles degrees (-90, 90) set value to 360 if fin not in use
+# Positive deflection will pitch up and yaw to starboard side
 float64[4] fin
 
 # Thruster commands (0-100)
