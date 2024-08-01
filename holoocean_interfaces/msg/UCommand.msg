@@ -7,5 +7,5 @@ std_msgs/Header header
 # Positive deflection will pitch up and yaw to starboard side
 float64[4] fin
 
-# Thruster commands (0-100)
+# Thruster commands (-100, 100) with 0 as off
 int64 thruster
