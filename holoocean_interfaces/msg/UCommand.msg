@@ -6,5 +6,5 @@ std_msgs/Header header
 # Fin commands angles degrees (-90, 90) set value to 360 if fin not in use
 float64[4] fin
 
-# Thruster commands (0-100)
+# Thruster commands (-100, 100) with 0 as off
 int64 thruster
