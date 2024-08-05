@@ -36,18 +36,18 @@ class CommandExample(Node):
 
         # Predefined sequence of headings, speeds, and depths
         self.predefined_sequence = [
-            {'depth': 10.0, 'heading': 90.0, 'speed': 1200.0},
-            {'depth': 0.1, 'heading': -60.0, 'speed': 1150.0},
-            {'depth': 15.0, 'heading': 180.0, 'speed': 1300.0},
-            {'depth': 20.0, 'heading': -90.0, 'speed': 1400.0},
-            {'depth': 12.0, 'heading': 45.0, 'speed': 1250.0},
-            {'depth': 18.0, 'heading': 135.0, 'speed': 1350.0},
-            {'depth': 22.0, 'heading': -125.0, 'speed': 1450.0},
-            {'depth': 8.0, 'heading': -45.0, 'speed': 1150.0},
-            {'depth': 0.1, 'heading': -60.0, 'speed': 1150.0},
-            {'depth': 14.0, 'heading': -90.0, 'speed': 1250.0},
-            {'depth': 19.0, 'heading': 180.0, 'speed': 1350.0},
-            {'depth': 25.0, 'heading': 90.0, 'speed': 1500.0},
+            {'depth': 10.0, 'heading': 90.0, 'speed': 0.0},
+            {'depth': 0.1, 'heading': -60.0, 'speed': 2.0},
+            {'depth': 15.0, 'heading': 180.0, 'speed': 2.0},
+            {'depth': 20.0, 'heading': -90.0, 'speed': 2.0},
+            {'depth': 12.0, 'heading': 45.0, 'speed': 2.0},
+            {'depth': 18.0, 'heading': 135.0, 'speed': 2.0},
+            {'depth': 22.0, 'heading': -125.0, 'speed': 2.0},
+            {'depth': 8.0, 'heading': -45.0, 'speed': 2.0},
+            {'depth': 0.1, 'heading': -60.0, 'speed': 2.0},
+            {'depth': 14.0, 'heading': -90.0, 'speed': 2.0},
+            {'depth': 19.0, 'heading': 180.0, 'speed': 2.0},
+            {'depth': 25.0, 'heading': 90.0, 'speed': 2.0},
         ]
 
         #Setup timer to continue publishing depth heading

@@ -5,8 +5,7 @@ from holoocean.dynamics import *
 import rclpy
 from rclpy.node import Node
 
-from holoocean_interfaces.msg import HSD
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Float64
 
 
 class TorpedoNode(Node):
@@ -28,11 +27,27 @@ class TorpedoNode(Node):
         
         ######## CUSTOM SUBSCRIBERS ############
         
-        #Depth heading subscriber:
-        self.subscription = self.create_subscription(
-            HSD,
-            'desiredHSD',
-            self.callback_set_controller,
+        # Positive value for increasing depth (meters)
+        self.depth_sub = self.create_subscription(
+            Float64,
+            'depth',
+            self.depth_callback,
+            10
+        )
+        
+        # Heading in degrees (-180, 180) centered at NORTH?? 
+        self.heading_sub = self.create_subscription(
+            Float64,
+            'heading',
+            self.heading_callback,
+            10
+        )
+
+        # Speed (surge) in x body frame (forward, m/s)
+        self.speed_sub = self.create_subscription(
+            Float64,
+            'speed',
+            self.speed_callback,
             10
         )
 
@@ -64,9 +79,14 @@ class TorpedoNode(Node):
 
         self.interface.publish_sensor_data(state)
 
-    def callback_set_controller(self, msg):
-        # self.get_logger().info('Controller Received: {}'.format(msg))
-        self.vehicle.set_goal(msg.depth, msg.heading, msg.speed)     #Changes depth (positive depth), heading, thruster RPM goals for controller
+    def depth_callback(self,msg):
+        self.vehicle.set_depth_goal(msg.data)
+
+    def heading_callback(self,msg):
+        self.vehicle.set_heading_goal(msg.data)
+
+    def speed_callback(self,msg):
+        self.vehicle.set_surge_goal(msg.data)
 
     def create_publishers(self):
         for sensor in self.interface.sensors:

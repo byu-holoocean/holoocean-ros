@@ -90,19 +90,16 @@ class ControllerExample(Node):
         
         ######## Control Surfaces Publishers #########
 
-        self.fin_publisher = self.self.create_publisher(UCommand, 'u_command', 10)
+        self.publisher = self.self.create_publisher(UCommand, 'u_command', 10)
 
         ######## Control loop timer ###############
         if self.time_warp > 0:
             self.timer_period =   0.1 / self.time_warp  # seconds
             timer_publish_period = 0.5 / self.time_warp  # seconds
-            self.timer_control = self.create_timer(self.timer_period, self.publish_commands)
+            self.timer_control = self.create_timer(self.timer_period, self.control_loop)
         else:
             ValueError("frames_per_sec cannot be 0 for time warping. Set a value > 0 ")
 
-        self.set_parameters(scenario)
-
-    def set_parameters(self, scenario):
         autopilot = scenario.get("autopilot", {})
         depth_params = autopilot.get("depth", {})
         heading_params = autopilot.get("heading", {})
@@ -170,13 +167,6 @@ class ControllerExample(Node):
 
         # Speed - Example values; replace with values from the scenario if needed
 
-        self._last_error = 0
-        self.u_int = 0
-        self.Kp_surge = self.autopilot_parameters["surge"]["Kp_surge"]
-        self.Kd_surge = self.autopilot_parameters["surge"]["Kd_surge"]
-        self.Ki_surge = self.autopilot_parameters["surge"]["Ki_surge"]
-
-
         # Depth - Example values; replace with values from the scenario if needed
         self.init_depth = False
         self.z_int = 0.0
@@ -190,10 +180,13 @@ class ControllerExample(Node):
         self.theta_int = self.autopilot_parameters["depth"]["theta_int"]
         self.K_w = self.autopilot_parameters["depth"]["K_w"]
 
+
+        
+
     ###### Control Loop #########
     #TODO: Check the timing and make sure the control loop runs at correct hz
     #Consider making a flag to indicate that the data is correct
-    
+
     #NEED ANGULAR VELOCITY data or numerically calculate pitch rate and yaw rate
     def control_loop(self):
         z = self.z
@@ -212,9 +205,13 @@ class ControllerExample(Node):
             #######################################################################
             # Propeller command
             #######################################################################
+            # TODO: Speed control loop here
+            if self.speed_control:
+                #TODO: Super of self?
+                n = self.speedAutopilot(self.nu, self.timer_period)
+            else:
+                n = self.ref_n 
             
-            n = self.surgeAutopilot(self.nu, self.timer_period)
-
             #######################################################################            
             # Depth autopilot (succesive loop closure)
             #######################################################################
@@ -263,7 +260,7 @@ class ControllerExample(Node):
                     self.K_sigma, 
                     self.lam,
                     self.phi_b,
-                    psi_ref, 
+                    self.heading, 
                     self.r_max, 
                     self.timer_period 
                     )
@@ -279,38 +276,103 @@ class ControllerExample(Node):
 
         return u_control
 
-    def surgeAutopilot(self, nu, sampleTime):
-        #TODO: Check that this is working and grabbing the right variables
-
-        u = nu[0]                   # surge velocity
-        # TODO: get nu_dot from linear acceleration IMU - gravity
-        # udot = nu_dot[0]            # surge acceleration
-
-
-        setpoint = self.speed
-        error = setpoint - u
-        derivative = (error - self._last_error) / sampleTime
-
-        n = self.Kp_surge * error + self.Ki_surge * self.u_int + self.Kd_surge * derivative
-
-        self.u_int += sampleTime * (error)
-
-        if n > self.nMax:
-            n = self.nMax       #Max out surge controller to the propeller command
-
-        return n
+    
     #TODO: Seperate control loop into 3 different functions
     
-    #### Publish Control Command ####
 
-    def publish_commands(self):
-        command = self.control_loop()
-        msg = UCommand()
-        msg.fin[0] = msg.fin[1] = msg.fin[2] = msg.fin[3] = 360 #todo: check here
-        for i in range(len(command)-1):
-            msg.fin[i] = command[i]
+    def depthHeadingAutopilot(self, eta, nu, sampleTime):
+        """
+        Returns:
+            list:
+                The control input u_control as a list: [delta_rt, delta_rb, delta_sl, delta_sr, n], where:
+
+                - delta_rt: Rudder top angle (rad).
+                - delta_rb: Rudder bottom angle (rad).
+                - delta_sl: Stern left angle (rad).
+                - delta_sr: Stern right angle (rad).
+                - n: Propeller revolution (rpm).
+        """
+
+        z = eta[2]                  # heave position (depth)
+        theta = eta[4]              # pitch angle
+        psi = eta[5]                # yaw angle
+        w = nu[2]                   # heave velocity
+        q = nu[4]                   # pitch rate
+        r = nu[5]                   # yaw rate
+        e_psi = psi - self.psi_d    # yaw angle tracking error
+        e_r   = r - self.r_d        # yaw rate tracking error
+        z_ref = self.ref_z          # heave position (depth) setpoint
+        psi_ref = self.ref_psi * self.D2R   # yaw angle setpoint
         
-        msg.thruster = command[-1]
+        if self.speed > 0:
+            #######################################################################
+            # Propeller command
+            #######################################################################
+            n = self.ref_n 
+            
+            #######################################################################            
+            # Depth autopilot (succesive loop closure)
+            #######################################################################
+            # LP filtered desired depth command 
+            if not self.init_depth:
+                self.z_d = z    #On initialization of the autopilot the commanded depth is set to the current depth
+                self.init_depth = True
+            self.z_d  = np.exp( -sampleTime * self.wn_d_z ) * self.z_d \
+                + ( 1 - np.exp( -sampleTime * self.wn_d_z) ) * z_ref  
+                
+            # PI controller    
+            theta_d = self.Kp_z * ( (z - self.z_d) + (1/self.T_z) * self.z_int )
+
+            if abs(theta_d) > self.theta_max:
+                theta_d = np.sign(theta_d) * self.theta_max
+
+            delta_s = -self.Kp_theta * ssa( theta - theta_d ) - self.Kd_theta * q \
+                - self.Ki_theta * self.theta_int - self.K_w * w
+            delta_sl = delta_sr = delta_s
+
+            # Euler's integration method (k+1)
+            self.z_int     += sampleTime * ( z - self.z_d )
+            self.theta_int += sampleTime * ssa( theta - theta_d )
+
+            #######################################################################
+            # Heading autopilot (SMC controller)
+            #######################################################################
+            
+            wn_d = self.wn_d            # reference model natural frequency
+            zeta_d = self.zeta_d        # reference model relative damping factor
+
+
+            # Integral SMC with 3rd-order reference model
+            [delta_r, self.e_psi_int, self.psi_d, self.r_d, self.a_d] = \
+                integralSMC( 
+                    self.e_psi_int, 
+                    e_psi, e_r, 
+                    self.psi_d, 
+                    self.r_d, 
+                    self.a_d, 
+                    self.T_nomoto, 
+                    self.K_nomoto, 
+                    wn_d, 
+                    zeta_d, 
+                    self.K_d, 
+                    self.K_sigma, 
+                    self.lam,
+                    self.phi_b,
+                    psi_ref, 
+                    self.r_max, 
+                    sampleTime 
+                    )
+                    
+            # # Euler's integration method (k+1)
+            # self.e_psi_int += sampleTime * ssa( psi - self.psi_d )
+            delta_rt = delta_rb = delta_r
+            
+            u_control = np.array([ delta_rt, delta_rb,delta_sl,delta_sr, n], float)
+
+        else:
+            u_control = np.array([ 0, 0,0,0, 0], float)
+
+        return u_control
 
     ### Data Sensor Callback ####
     def vel_callback(self, msg):

@@ -3,9 +3,9 @@ package_name: Ocean
 world: OpenWater     #Options: PierHarbor, Simple Underwater, Dam, OpenWater
 main_agent: auv0      
 ticks_per_sec: 30     #1/ticks_per_sec = Delta simulation time between simulation ticks
-frames_per_sec: 30    #Time warp = frames_per_sec / ticks_per_sec
+frames_per_sec: 150    #Time warp = frames_per_sec / ticks_per_sec
 draw_arrow: true      #On screen arrows for visualizing depth and heading commands
-show_viewport: true   #Display window for visualizing simulation (slows down speed significantly)
+show_viewport: false   #Display window for visualizing simulation (slows down speed significantly)
 agents:
   - agent_name: auv0
     agent_type: TorpedoAUV  #TorpedoAUV is the only vehicle currently integrated with full dynamcis
@@ -21,8 +21,8 @@ agents:
         ros_publish: true
       - sensor_type: DVLSensor    #Return velocity in the body frame and depth
         ros_publish: true
-        configuration:
-          VelCov: [0.01, 0.01, 0.01, 0.01]
+        # configuration:
+          # VelCov: [0.001, 0.001, 0.001, 0.001]
       - sensor_type: IMUSensor
         ros_publish: true
         configuration:
@@ -60,6 +60,7 @@ agents:
       r_bg: [0, 0, 0.02]
       r_bb: [0, 0, 0]
       Cd: 0.42
+      # K_nomoto:  
     actuator: 
       fin_area: 0.00665
       deltaMax_fin_deg: 25
@@ -82,3 +83,8 @@ agents:
         phi_b: 0.1
         K_d: 0.5
         K_sigma: 0.05
+      surge:
+        kp_surge: 400.0
+        ki_surge: 100.0
+        kd_surge: 40.0
+

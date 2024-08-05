@@ -34,7 +34,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RGBCamera.msg"
   "msg/RangeFinderSensor.msg"
   "msg/UCommand.msg"
-  "msg/HSD.msg"
   DEPENDENCIES std_msgs
 )
 
