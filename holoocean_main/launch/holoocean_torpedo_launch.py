@@ -3,7 +3,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
-from launch.substitutions import LaunchConfiguration
+# from launch.substitutions import LaunchConfiguration
 import launch_ros.actions
 from ament_index_python.packages import get_package_share_directory
 from pathlib import Path
@@ -16,9 +16,9 @@ def generate_launch_description():
     log_level = 'info'
 
     base = Path(get_package_share_directory('holoocean_main'))
-    params_file = base / 'config' / 'config.json'
+    params_file = base / 'config' / 'config.yaml'
 
-
+    log_dir = os.path.join(os.getenv('HOME'), 'ros2ws', 'log')
     # List contents of the directory to debug
     
     holoocean_namespace = 'holoocean'
@@ -30,8 +30,11 @@ def generate_launch_description():
         namespace=holoocean_namespace,
         output='screen',
         emulate_tty=True,
-        parameters=[{'params_file': str(params_file)}]  # Pass parameters in the correct format
-    )
+        parameters=[{'params_file': str(params_file)}],  # Pass parameters in the correct format
+        remappings=[
+                ('/holoocean/ControlCommand', '/control_command'),
+            ]    
+        )
 
     # Define the command node
     command_node = launch_ros.actions.Node(
@@ -52,39 +55,14 @@ def generate_launch_description():
         namespace=holoocean_namespace,
         output='screen',
         emulate_tty=True,
-        parameters=[{'params_file': str(params_file)}]  # Pass parameters in the correct format
-    )
-
-    yaml_file = LaunchConfiguration('yaml_file')
-    json_file = LaunchConfiguration('json_file')
-
-    yaml_path = DeclareLaunchArgument(
-        'yaml_file',
-        default_value=os.path.join(get_package_share_directory('holoocean_main'), 'config', 'config.yaml'),
-        description='Path to the YAML configuration file'
-    )
-    json_path = DeclareLaunchArgument(
-        'json_file',
-        default_value=os.path.join(get_package_share_directory('holoocean_main'), 'config', 'config.json'),
-        description='Path to the output JSON configuration file'
-    )
-
-    convert_yaml = ExecuteProcess(
-        cmd=['python3', os.path.join(get_package_share_directory('holoocean_main'), 'scripts', 'yaml_to_json.py'), yaml_file, json_file],
-        output='screen'
+        parameters=[{'params_file': str(params_file)}],  # Pass parameters in the correct format
     )
 
 
     return LaunchDescription([
-        yaml_path,
-        json_path,
-        convert_yaml,
         holoocean_main_node,
         command_node,
-        state_est_node                             
+        state_est_node ,
+        # rosbag                            
     ])
 
-
-#Do I need this main function? 
-if __name__ == '__main__':
-    generate_launch_description()

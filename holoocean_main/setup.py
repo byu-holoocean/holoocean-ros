@@ -29,7 +29,9 @@ setup(
             'holoocean_node = holoocean_main.holoocean_node:main',
             'torpedo_node = holoocean_main.torpedo_node:main',
             'state_estimate = holoocean_main.RK45_state_est:main',
-            'command_node = holoocean_main.command_node:main'
+            'command_node = holoocean_main.command_node:main',
+            'fins_node = holoocean_main.fins_node:main',
+            'controller_node = holoocean_main.controller_node:main'
         ],
     },
 )

@@ -1,11 +1,10 @@
+from holoocean_main.holoocean_interface import HolooceanInterface
 import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Float64
 import numpy as np
 
-from pathlib import Path
-import json
 
 class CommandExample(Node):
 
@@ -14,48 +13,55 @@ class CommandExample(Node):
 
         self.declare_parameter('params_file', '')
         
-        file_path = Path(self.get_parameter('params_file').get_parameter_value().string_value)
+        file_path = self.get_parameter('params_file').get_parameter_value().string_value
+        interface = HolooceanInterface(file_path, init=False)
 
-        scenario = None
-
-        with file_path.open() as params_file:
-            scenario = json.load(params_file)
-        
-        self.time_warp = 1.0
-        if "frames_per_sec" in scenario:
-            self.time_warp = scenario["frames_per_sec"]/ scenario["ticks_per_sec"]
-
-        print("Time Warp:", self.time_warp)
+        self.time_warp = interface.get_time_warp()
 
         self.depth_publisher = self.create_publisher(Float64, 'depth', 10)
         self.heading_publisher = self.create_publisher(Float64, 'heading', 10)
         self.speed_publisher = self.create_publisher(Float64, 'speed', 10)
         
+        # self.use_random = self.get_parameter('random').get_parameter_value().bool_value
         self.use_random = False
         self.sequence_index = 0
 
         # Predefined sequence of headings, speeds, and depths
+
+
+        self.deep_predefined_sequence = [
+            {'depth': 270.0, 'heading': 90.0, 'speed': 500.0},
+            {'depth': 250.1, 'heading': 80.0, 'speed': 500.0},
+            {'depth': 280.0, 'heading': 60.0, 'speed': 500.0},
+            # {'depth': 20.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 12.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 18.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 22.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 8.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 0.1, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 14.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 19.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 25.0, 'heading': 90.0, 'speed': 2.0},
+        ]
+
         self.predefined_sequence = [
-            {'depth': 10.0, 'heading': 90.0, 'speed': 0.0},
-            {'depth': 0.1, 'heading': -60.0, 'speed': 2.0},
-            {'depth': 15.0, 'heading': 180.0, 'speed': 2.0},
-            {'depth': 20.0, 'heading': -90.0, 'speed': 2.0},
-            {'depth': 12.0, 'heading': 45.0, 'speed': 2.0},
-            {'depth': 18.0, 'heading': 135.0, 'speed': 2.0},
-            {'depth': 22.0, 'heading': -125.0, 'speed': 2.0},
-            {'depth': 8.0, 'heading': -45.0, 'speed': 2.0},
-            {'depth': 0.1, 'heading': -60.0, 'speed': 2.0},
-            {'depth': 14.0, 'heading': -90.0, 'speed': 2.0},
-            {'depth': 19.0, 'heading': 180.0, 'speed': 2.0},
-            {'depth': 25.0, 'heading': 90.0, 'speed': 2.0},
+            {'depth': 2.0, 'heading': 90.0, 'speed': 2.0},
+            {'depth': 0.1, 'heading': 90.0, 'speed': 2.0},
+            {'depth': 5.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 20.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 12.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 18.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 22.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 8.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 0.1, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 14.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 19.0, 'heading': 90.0, 'speed': 2.0},
+            # {'depth': 25.0, 'heading': 90.0, 'speed': 2.0},
         ]
 
         #Setup timer to continue publishing depth heading
-        if self.time_warp > 0:
-            timer_period = 60.0 / self.time_warp  # seconds
-            timer_publish_period = 0.5 / self.time_warp  # seconds
-        else:
-            ValueError("frames_per_sec cannot be 0 for time warping. Set a value > 0 ")
+        timer_period = 150.0 / self.time_warp  # seconds
+        timer_publish_period = 0.5 / self.time_warp  # seconds
 
         if self.use_random:
             self.randomize_callback()
@@ -68,10 +74,11 @@ class CommandExample(Node):
 
 
     def sequence_callback(self):
-        if self.sequence_index < len(self.predefined_sequence):
-            self.depth = self.predefined_sequence[self.sequence_index]['depth']
-            self.heading = self.predefined_sequence[self.sequence_index]['heading']
-            self.speed = self.predefined_sequence[self.sequence_index]['speed']
+        sequence = self.predefined_sequence
+        if self.sequence_index < len(sequence):
+            self.depth = sequence[self.sequence_index]['depth']
+            self.heading = sequence[self.sequence_index]['heading']
+            self.speed = sequence[self.sequence_index]['speed']
             self.sequence_index += 1
         else:
             self.sequence_index = 0  # Restart the sequence from the beginning

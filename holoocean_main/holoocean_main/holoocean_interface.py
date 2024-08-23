@@ -3,9 +3,8 @@ import holoocean
 
 from pathlib import Path
 import json
+import yaml
 from holoocean_main.sensor_data_encode import encoders, multi_publisher_sensors
-
-import time
 
 #TODO: Maybe add sensor data encode to this file
 
@@ -15,23 +14,68 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path):
+    def __init__(self, scenario_path, init=True):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
         """
+
+        scenario_path = Path(scenario_path)
         
-        file_path = Path(scenario_path)
+        scenario = self.parse_scenario_yaml(scenario_path)
+        
+        #TODO: make sure dynamics sensor is enabled 
+        if init:
+            self.env = holoocean.make(scenario_cfg=scenario)
+            self.scenario = scenario
+            self.initialized = True
+            self.sensors = self.create_sensor_list()
+        else:
+            self.scenario = scenario
+            self.initialized = False
+
+
+
+    def parse_scenario(self, path):
+        file_path = Path(path)
         scenario = None
 
         with file_path.open() as params_file:
             scenario = json.load(params_file)
-        
-        #TODO: make sure dynamics sensor is enabled 
-        self.env = holoocean.make(scenario_cfg=scenario,) #show_viewport=False)
-        self.scenario = scenario
 
-        self.sensors = self.create_sensor_list()
+        return scenario
+    
+    def find_holoocean_scenario(self, yaml_content):
+        """Recursively search for 'holoocean_scenario' in the YAML content."""
+        if isinstance(yaml_content, dict):
+            for key, value in yaml_content.items():
+                if key == "holoocean_scenario":
+                    return value
+                else:
+                    result = self.find_holoocean_scenario(value)
+                    if result is not None:
+                        return result
+        elif isinstance(yaml_content, list):
+            for item in yaml_content:
+                result = self.find_holoocean_scenario(item)
+                if result is not None:
+                    return result
+        return None
+
+    def parse_scenario_yaml(self, scenario_path):
+        with open(scenario_path, 'r') as file:
+            yaml_content = yaml.safe_load(file)
+        
+        holoocean_scenario_yaml = self.find_holoocean_scenario(yaml_content)
+        
+        if holoocean_scenario_yaml is None:
+            raise KeyError("Could not find 'holoocean_scenario' in the YAML file.")
+        
+        # # Convert the 'holoocean_scenario' part to JSON
+        # scenario = json.dumps(holoocean_scenario_yaml, indent=4)
+        # print(holoocean_scenario_yaml)
+
+        return holoocean_scenario_yaml
 
     def create_sensor_list(self):
         scenario = self.scenario
@@ -110,18 +154,43 @@ class HolooceanInterface():
         return state
     
     def get_scenario(self):
-        return self.env._scenario
+        if self.initialized:
+            return self.env._scenario
+        else:
+            return self.scenario
     
     def get_tick_rate(self):
-        return self.env._ticks_per_sec
+        if self.initialized:
+            return self.env._ticks_per_sec
+        else:
+            if "ticks_per_sec" in self.scenario:
+                return self.scenario['ticks_per_sec']
+            else:
+                ValueError('ticks_per_sec not specified in scenario')
     
     def get_frame_rate(self):
-        return self.env._frames_per_sec
+        if self.initialized:
+            return self.env._frames_per_sec
+        else:
+            if "frames_per_sec" in self.scenario:
+                return self.scenario['frames_per_sec']
+            else:
+                ValueError('frames_per_sec not specified in scenario')
     
     def get_period(self):
-        return 1.0/self.env._ticks_per_sec
+        return 1.0/self.get_tick_rate()
     
+    def get_time_warp(self):
+        #Check to make sure this is correct
+        time_warp = self.get_frame_rate() / self.get_tick_rate()
 
+        if time_warp <= 0:
+            ValueError("frames_per_sec cannot be 0 for time warping. Set a value > 0 ")
+
+        return time_warp
+
+    def get_time_warp_period(self):
+        return self.get_period() / self.get_time_warp()
 
 
 

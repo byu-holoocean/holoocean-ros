@@ -94,7 +94,7 @@ def generate_launch_description():
         holoocean_main_node,
         command_node,
         state_est_node,
-        fin_sub_node                            
+        # fin_sub_node                            
     ])
 
 
