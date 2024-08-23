@@ -3,6 +3,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, UCommand
+import numpy as np
 
 
 multi_publisher_sensors = {
