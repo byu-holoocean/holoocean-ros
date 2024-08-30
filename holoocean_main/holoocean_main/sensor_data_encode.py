@@ -322,7 +322,7 @@ class GPSEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
         
-        self.message_type = PoseWithCovarianceStamped
+        self.message_type = Odometry
 
 
         self.cov = [0.0] * 36
@@ -342,7 +342,7 @@ class GPSEncoder(SensorPublisher):
                     raise ValueError("Cov must be a list of length 3 or 3x3.")
 
     def encode(self, sensor_data):
-        msg = PoseWithCovarianceStamped()
+        msg = Odometry()
         msg.header.frame_id = 'map'
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])

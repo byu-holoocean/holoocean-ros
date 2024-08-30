@@ -14,15 +14,18 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, init=True):
+    def __init__(self, scenario_path, init=True, node=None):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
         """
-
+        self.node = node
         scenario_path = Path(scenario_path)
         
         scenario = self.parse_scenario_yaml(scenario_path)
+
+        #TODO: Make a parameter to use the system time
+        self.system_time = True
         
         #TODO: make sure dynamics sensor is enabled 
         if init:
@@ -132,8 +135,11 @@ class HolooceanInterface():
                     msg = sensor.encode(state[sensor.type])
 
                 # Header
-                msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
-                msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
+                if self.system_time:
+                    msg.header.stamp = self.node.get_clock().now().to_msg()
+                else:
+                    msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
+                    msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
 
                 sensor.publisher.publish(msg)
             except KeyError:

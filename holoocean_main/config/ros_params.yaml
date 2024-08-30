@@ -1,0 +1,9 @@
+/controller_node:
+  ros__parameters:
+    torpedo_fin: 3
+    vehicle_name: auv0
+
+/command_node:
+  ros__parameters:
+    random: false
+    deep: true

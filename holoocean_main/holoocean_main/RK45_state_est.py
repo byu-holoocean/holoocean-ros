@@ -12,14 +12,17 @@ class RKStateEstimate(Node):
         super().__init__('RK45_state_est')
         self.state_pub = self.create_publisher(Odometry, 'dead_reckon', 10)
 
-        timer_period = 0.01  # seconds publish vehicle status update
+        timer_frequency = 10
+        timer_period = 1/timer_frequency  # seconds publish vehicle status update
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.vel_sub = self.create_subscription(
             TwistWithCovarianceStamped,
             'DVLSensorVelocity',
+            # 'VelocitySensor',
             self.vel_callback,
             10)
+        self.body_frame_velocity = True
 
         self.rotation_sub = self.create_subscription(
             Vector3Stamped,
@@ -52,12 +55,17 @@ class RKStateEstimate(Node):
 
         dt = current_time - self.last_time
 
-        velocity_body = np.array([msg.twist.twist.linear.x, msg.twist.twist.linear.y, msg.twist.twist.linear.z])
-        #Check this order
-        body_to_world = Rotation.from_euler('zyx', [self.yaw, self.pitch, self.roll], True).as_matrix()
-        # body_to_world = np.transpose(matrix_world_to_body)
-        #check this order 
-        self.velocity = np.matmul(body_to_world, velocity_body)
+        if self.body_frame_velocity:
+            velocity_body = np.array([msg.twist.twist.linear.x, msg.twist.twist.linear.y, msg.twist.twist.linear.z])
+            #Check this order
+            body_to_world = Rotation.from_euler('zyx', [self.yaw, self.pitch, self.roll], True).as_matrix()
+            # body_to_world = np.transpose(matrix_world_to_body)
+            #check this order 
+            self.velocity = np.matmul(body_to_world, velocity_body)
+        else:
+            self.velocity[0] = msg.twist.twist.linear.x
+            self.velocity[1] = msg.twist.twist.linear.y
+            self.velocity[2] = msg.twist.twist.linear.z
 
         # Integrate velocities using RK45
         def derivatives(t, state, vx, vy, vz):

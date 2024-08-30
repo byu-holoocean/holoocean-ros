@@ -55,12 +55,12 @@ class TorpedoNode(Node):
         self.draw = False
         if "draw_arrow" in self.interface.scenario:
             self.draw = self.interface.scenario["draw_arrow"]
-        self.use_rpm = False
+        self.use_rpm = True
 
         #Create vehicle object attached to holoocean agent with dynamic parameters 
         #TODO: Change the vehicle that is being setup from the parameters
         self.vehicle = threeFinInd(self.interface.scenario, 'auv0','depthHeadingAutopilot')
-        self.torpedo_dynamics = FossenDynamics(self.vehicle,self.interface.get_tick_rate())  
+        self.torpedo_dynamics = FossenDynamics(self.vehicle, self.interface.get_period())  
 
    
     def tick_callback(self):
