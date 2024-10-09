@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y software-properties-common \
 # Source ROS setup script
 SHELL ["/bin/bash", "-c"]
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+RUN source /opt/ros/humble/setup.bash
 
 # Switch back to the ue4 user
 USER ue4
