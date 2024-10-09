@@ -1,36 +1,29 @@
+from holoocean.vehicle_dynamics.torpedo import *
+from holoocean_main.holoocean_interface import HolooceanInterface
 import rclpy
 from rclpy.node import Node
+import numpy as np
+from scipy.spatial.transform import Rotation
 
 from std_msgs.msg import Float64
 from geometry_msgs.msg import PoseWithCovarianceStamped, TwistWithCovarianceStamped, Vector3Stamped
 from holoocean_interfaces.msg import UCommand
-import numpy as np
 
-from pathlib import Path
-import json
-
-from holoocean.dynamics_controls.control import integralSMC
-from holoocean.dynamics_controls.gnc import ssa
 
 class ControllerExample(Node):
 
     def __init__(self):
         super().__init__('controller_node')
 
+        # Vehicle Setup
         self.declare_parameter('params_file', '')
+        file_path = self.get_parameter('params_file').get_parameter_value().string_value
+
+        interface = HolooceanInterface(file_path, init=False)
         
-        file_path = Path(self.get_parameter('params_file').get_parameter_value().string_value)
-
-        scenario = None
-
-        with file_path.open() as params_file:
-            scenario = json.load(params_file)
-        
-        self.time_warp = 1.0
-        if "frames_per_sec" in scenario:
-            self.time_warp = scenario["frames_per_sec"]/ scenario["ticks_per_sec"]
-
-        print("Time Warp:", self.time_warp)
+        # self.declare_parameter('params_file', '') #TORPEDO TYPE
+        # torpedo name get
+        self.torpedo = threeFinInd(interface.get_scenario(),vehicle_name='auv0')
 
         ############ HSD subscribers: ############
         self.depth = 0.0
@@ -85,232 +78,49 @@ class ControllerExample(Node):
         self.depth_sub = self.create_subscription(
             PoseWithCovarianceStamped,
             'DepthSensor',
-            self.depth_callback,
+            self.depth_sensor_callback,
             10)
         
         ######## Control Surfaces Publishers #########
 
-        self.fin_publisher = self.self.create_publisher(UCommand, 'u_command', 10)
+        self.publisher = self.create_publisher(UCommand, 'ControlCommand', 10)
+
 
         ######## Control loop timer ###############
-        if self.time_warp > 0:
-            self.timer_period =   0.1 / self.time_warp  # seconds
-            timer_publish_period = 0.5 / self.time_warp  # seconds
-            self.timer_control = self.create_timer(self.timer_period, self.publish_commands)
-        else:
-            ValueError("frames_per_sec cannot be 0 for time warping. Set a value > 0 ")
-
-        self.set_parameters(scenario)
-
-    def set_parameters(self, scenario):
-        autopilot = scenario.get("autopilot", {})
-        depth_params = autopilot.get("depth", {})
-        heading_params = autopilot.get("heading", {})
-        surge_params = autopilot.get("surge", {})
-
-        self.dynamic_parameters = {
-            "mass": scenario.get("mass", 16),
-            "length": scenario.get("length", 1.6),
-            "rho": scenario.get("rho", 1026),
-            "diam": scenario.get("diam", 0.19),
-            "r_bg": scenario.get("r_bg", [0, 0, 0.02]),
-            "r_bb": scenario.get("r_bb", [0, 0, 0]),
-            "r44": scenario.get("r44", 0.3),
-            "Cd": scenario.get("Cd", 0.42),
-            "T_surge": scenario.get("T_surge", 20),
-            "T_sway": scenario.get("T_sway", 20),
-            "zeta_roll": scenario.get("zeta_roll", 0.3),
-            "zeta_pitch": scenario.get("zeta_pitch", 0.8),
-            "T_yaw": scenario.get("T_yaw", 1),
-            "K_nomoto": scenario.get("K_nomoto", 5.0 / 20.0)
-        }
-
-        self.autopilot_parameters = {
-            'depth': {
-                'wn_d_z': depth_params.get('wn_d_z', 0.2),
-                'Kp_z': depth_params.get('Kp_z', 0.1),
-                'T_z': depth_params.get('T_z', 100),
-                'Kp_theta': depth_params.get('Kp_theta', 5.0),
-                'Kd_theta': depth_params.get('Kd_theta', 2.0),
-                'Ki_theta': depth_params.get('Ki_theta', 0.3),
-                'K_w': depth_params.get('K_w', 5.0),
-                'theta_max_deg': depth_params.get('theta_max_deg', 30),
-            },
-            'heading': {
-                'wn_d': heading_params.get('wn_d', 1.2),
-                'zeta_d': heading_params.get('zeta_d', 0.8),
-                'r_max': heading_params.get('r_max', 0.9),
-                'lam': heading_params.get('lam', 0.1),
-                'phi_b': heading_params.get('phi_b', 0.1),
-                'K_d': heading_params.get('K_d', 0.5),
-                'K_sigma': heading_params.get('K_sigma', 0.05),
-            },
-            'surge': {
-                'kp_surge': surge_params.get('kp_surge', 400.0),
-                'ki_surge': surge_params.get('ki_surge', 50.0),
-                'kd_surge': surge_params.get('kd_surge', 30.0),
-            }
-        }
-
-        # Heading 
-        self.psi_d = 0.0
-        self.r_d = 0
-        self.a_d = 0
-        self.e_psi_int = 0
-
-        self.wn_d = self.autopilot_parameters["heading"]["wn_d"]
-        self.zeta_d = self.autopilot_parameters["heading"]["zeta_d"]
-        self.K_d = self.autopilot_parameters["heading"]["K_d"]
-        self.K_sigma = self.autopilot_parameters["heading"]["K_sigma"]
-        self.lam = self.autopilot_parameters["heading"]["lam"]
-        self.phi_b = self.autopilot_parameters["heading"]["phi_b"]
-        self.r_max = self.autopilot_parameters["heading"]["r_max"]
-        self.T_nomoto = self.dynamic_parameters["T_yaw"]
-        self.K_nomoto = self.dynamic_parameters["K_nomoto"]
-
-        # Speed - Example values; replace with values from the scenario if needed
-
-        self._last_error = 0
-        self.u_int = 0
-        self.Kp_surge = self.autopilot_parameters["surge"]["Kp_surge"]
-        self.Kd_surge = self.autopilot_parameters["surge"]["Kd_surge"]
-        self.Ki_surge = self.autopilot_parameters["surge"]["Ki_surge"]
-
-
-        # Depth - Example values; replace with values from the scenario if needed
-        self.init_depth = False
-        self.z_int = 0.0
-        self.wn_d_z = self.autopilot_parameters["depth"]["wn_d_z"]
-        self.Kp_z = self.autopilot_parameters["depth"]["Kp_z"]
-        self.T_z = self.autopilot_parameters["depth"]["T_z"]
-        self.theta_max = self.autopilot_parameters["depth"]["theta_max_deg"]
-        self.Kp_theta = self.autopilot_parameters["depth"]["Kp_theta"]
-        self.Kd_theta = self.autopilot_parameters["depth"]["Kd_theta"]
-        self.Ki_theta = self.autopilot_parameters["depth"]["Ki_theta"]
-        self.theta_int = self.autopilot_parameters["depth"]["theta_int"]
-        self.K_w = self.autopilot_parameters["depth"]["K_w"]
+       
+        self.timer_period =   interface.get_time_warp_period()
+        self.timer_control = self.create_timer(self.timer_period, self.control_loop)
 
     ###### Control Loop #########
     #TODO: Check the timing and make sure the control loop runs at correct hz
     #Consider making a flag to indicate that the data is correct
-    
-    #NEED ANGULAR VELOCITY data or numerically calculate pitch rate and yaw rate
     def control_loop(self):
+        #not used for this controller
+        x = y = 0
         z = self.z
-        theta = self.pitch              # pitch angle
-        psi = self.yaw                # yaw angle
-        w = self.nu[2]                   # heave velocity
-        q = self.nu[4]                   # pitch rate
-        r = self.nu[5]                   # yaw rate
-        #Does the following line need ssa()?? #actually it comes from the smc calculator
-        e_psi = psi - self.psi_d    # yaw angle tracking error
-        e_r   = r - self.r_d        # yaw rate tracking error
-        z_ref = self.depth          # heave position (depth) setpoint
-        psi_ref = np.deg2rad(self.heading)   # yaw angle setpoint #TODO: check 
+        eta = [x, y, z, self.roll, self.pitch, self.yaw ]
 
-        if self.speed > 0:
-            #######################################################################
-            # Propeller command
-            #######################################################################
-            
-            n = self.surgeAutopilot(self.nu, self.timer_period)
+        #DO SOMETHING WITHOUT THE IMU
+        #Calculate the TIME WITH THE TIME FUNCTION
 
-            #######################################################################            
-            # Depth autopilot (succesive loop closure)
-            #######################################################################
-            # LP filtered desired depth command 
-            if not self.init_depth:
-                self.z_d = z    #On initialization of the autopilot the commanded depth is set to the current depth
-                self.init_depth = True
-            self.z_d  = np.exp( -self.timer_period * self.wn_d_z ) * self.z_d \
-                + ( 1 - np.exp( -self.timer_period * self.wn_d_z) ) * z_ref  
-                
-            # PI controller    
-            theta_d = self.Kp_z * ( (z - self.z_d) + (1/self.T_z) * self.z_int )
+        u_control = self.torpedo.depthHeadingAutopilot(eta, self.nu, self.timer_period, imu=False)
 
-            if abs(theta_d) > self.theta_max:
-                theta_d = np.sign(theta_d) * self.theta_max
-
-            delta_s = -self.Kp_theta * ssa( theta - theta_d ) - self.Kd_theta * q \
-                - self.Ki_theta * self.theta_int - self.K_w * w
-            delta_sl = delta_sr = delta_s
-
-            # Euler's integration method (k+1)
-            self.z_int     += self.timer_period * ( z - self.z_d )
-            self.theta_int += self.timer_period * ssa( theta - theta_d )
-
-            #######################################################################
-            # Heading autopilot (SMC controller)
-            #######################################################################
-            
-            wn_d = self.wn_d            # reference model natural frequency
-            zeta_d = self.zeta_d        # reference model relative damping factor
-
-
-            # Integral SMC with 3rd-order reference model
-            [delta_r, self.e_psi_int, self.psi_d, self.r_d, self.a_d] = \
-                integralSMC( 
-                    self.e_psi_int, 
-                    e_psi, e_r, 
-                    self.psi_d, 
-                    self.r_d, 
-                    self.a_d, 
-                    self.T_nomoto, 
-                    self.K_nomoto, 
-                    wn_d, 
-                    zeta_d, 
-                    self.K_d, 
-                    self.K_sigma, 
-                    self.lam,
-                    self.phi_b,
-                    psi_ref, 
-                    self.r_max, 
-                    self.timer_period 
-                    )
-                    
-            # Euler's integration method (k+1)
-            self.e_psi_int += self.timer_period * ssa( psi - self.psi_d )
-            delta_rt = delta_rb = delta_r
-            
-            u_control = np.array([ delta_rt, delta_rb,delta_sl,delta_sr, n], float)
-
-        else:
-            u_control = np.array([ 0, 0,0,0, 0], float)
-
-        return u_control
-
-    def surgeAutopilot(self, nu, sampleTime):
-        #TODO: Check that this is working and grabbing the right variables
-
-        u = nu[0]                   # surge velocity
-        # TODO: get nu_dot from linear acceleration IMU - gravity
-        # udot = nu_dot[0]            # surge acceleration
-
-
-        setpoint = self.speed
-        error = setpoint - u
-        derivative = (error - self._last_error) / sampleTime
-
-        n = self.Kp_surge * error + self.Ki_surge * self.u_int + self.Kd_surge * derivative
-
-        self.u_int += sampleTime * (error)
-
-        if n > self.nMax:
-            n = self.nMax       #Max out surge controller to the propeller command
-
-        return n
-    #TODO: Seperate control loop into 3 different functions
-    
-    #### Publish Control Command ####
-
-    def publish_commands(self):
-        command = self.control_loop()
         msg = UCommand()
-        msg.fin[0] = msg.fin[1] = msg.fin[2] = msg.fin[3] = 360 #todo: check here
-        for i in range(len(command)-1):
-            msg.fin[i] = command[i]
+        msg.fin = [0.0,0.0,0.0,0.0]
+        for i in range(self.torpedo.dimU - 1):
+            msg.fin[i] = np.rad2deg(u_control[i])
         
-        msg.thruster = command[-1]
+        #CHECK: Make sure it can access nMax
+        # mapped_thrust = self.map_to_100(u_control[-1], self.torpedo.nMax)
+        # msg.thruster = int(mapped_thrust)
+        msg.thruster = int(u_control[-1])
+
+        self.publisher.publish(msg)
+
+    def map_to_100(self, value, max_value):
+        if max_value == 0:
+            raise ValueError("max_value must be greater than 0")
+        return (value / max_value) * 100       
 
     ### Data Sensor Callback ####
     def vel_callback(self, msg):
@@ -318,23 +128,30 @@ class ControllerExample(Node):
         self.nu[1] = msg.twist.twist.linear.y
         self.nu[2] = msg.twist.twist.linear.z
 
-    def rotation_callbacK(self, msg):
-        self.roll = msg.vector.x
-        self.pitch = msg.vector.y
-        self.yaw = msg.vector.z
+    def rotation_callback(self, msg):
+        #TODO: Make sure the euler angles are switched to zyx in radians
+        data = [msg.vector.x, msg.vector.y, msg.vector.z]
+        corrected = Rotation.from_euler('xyz',data, True).as_euler('zyx', False)
+        
+        self.roll = corrected[0]
+        self.pitch = corrected[1]
+        self.yaw = corrected[2]
 
-    def depth_callback(self, msg):
+    def depth_sensor_callback(self, msg):
         self.z = msg.pose.pose.position.z
 
     ### HSD Callback Functions ###
     def depth_callback(self, msg):
-        self.depth = msg.data
+        #TODO Check to make sure change to coordinate frame of the depth goal to positive downward
+        
+        self.torpedo.set_depth_goal(msg.data)
 
     def heading_callback(self, msg):
-        self.heading = msg.data
+        #TODO: Controller wants heading from -180 to 180 in degrees centered at north
+        self.torpedo.set_heading_goal(msg.data)
 
     def speed_callback(self, msg):
-        self.speed = msg.data
+        self.torpedo.set_surge_goal(msg.data)
 
 
 def main(args=None):

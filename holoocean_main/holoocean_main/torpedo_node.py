@@ -15,13 +15,13 @@ class TorpedoNode(Node):
         
         ######## START HOLOOCEAN INTERFACE ###########
         self.declare_parameter('params_file', '')
-        
         file_path = self.get_parameter('params_file').get_parameter_value().string_value
 
         self.interface = HolooceanInterface(file_path)
 
         self.create_publishers() #Holoocean Publishers
-        self.set_timing() #Connect holocean timing to ros timing
+        self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
+        self.get_logger().info('Tick Started')
 
         self.accel = np.array(np.zeros(6),float)
         
@@ -55,11 +55,12 @@ class TorpedoNode(Node):
         self.draw = False
         if "draw_arrow" in self.interface.scenario:
             self.draw = self.interface.scenario["draw_arrow"]
+        self.use_rpm = True
 
         #Create vehicle object attached to holoocean agent with dynamic parameters 
         #TODO: Change the vehicle that is being setup from the parameters
         self.vehicle = threeFinInd(self.interface.scenario, 'auv0','depthHeadingAutopilot')
-        self.torpedo_dynamics = FossenDynamics(self.vehicle,self.interface.get_tick_rate())  
+        self.torpedo_dynamics = FossenDynamics(self.vehicle, self.interface.get_period())  
 
    
     def tick_callback(self):
@@ -85,8 +86,11 @@ class TorpedoNode(Node):
     def heading_callback(self,msg):
         self.vehicle.set_heading_goal(msg.data)
 
-    def speed_callback(self,msg):
-        self.vehicle.set_surge_goal(msg.data)
+    def speed_callback(self, msg):
+        if self.use_rpm:
+            self.vehicle.set_rpm_goal(int(msg.data))
+        else:
+            self.vehicle.set_surge_goal(msg.data)
 
     def create_publishers(self):
         for sensor in self.interface.sensors:
@@ -109,20 +113,6 @@ class TorpedoNode(Node):
 
         self.interface.env.draw_arrow(pos.tolist(), end=[x_end, y_end, pos[2]], color=[0,0,255], thickness=5, lifetime=self.interface.get_period()+0.01)
         self.interface.env.draw_arrow(pos.tolist(), end=[pos[0], pos[1], -depth], color=color, thickness=5, lifetime=self.interface.get_period()+0.01)
-
-    def set_timing(self):
-        #TODO: Clean this up
-        self.time_warp = 1.0
-        #If set to max speed time warp will be 0 because frames per sec will be 0.
-        self.time_warp = self.interface.get_frame_rate() / self.interface.get_tick_rate()
-        self.warp_period = self.interface.get_period() / self.time_warp
-        print("Time Warp:", self.time_warp)
-
-        period = self.warp_period
-        print("Time Warp Period:", period)
-        self.timer = self.create_timer(period, self.tick_callback)
-        
-        self.get_logger().info('Tick Started')
 
 
 def main(args=None):

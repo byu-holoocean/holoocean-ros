@@ -3,11 +3,12 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, UCommand
+import numpy as np
 
 
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
-    'DynamicsSensor': ['Odom', 'Accel']
+    'DynamicsSensor': ['Odom', 'IMU']
 }
 
 class SensorPublisher(ABC):
@@ -181,6 +182,7 @@ class LocationEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = PoseWithCovarianceStamped()
         msg.header.frame_id = 'odom'
+        #Frame ID might be map
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
         msg.pose.pose.position.z = float(sensor_data[2])
@@ -211,6 +213,7 @@ class VelocityEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = TwistWithCovarianceStamped()
         msg.header.frame_id = 'odom'
+        #Frame id might actually be base link for velocity
 
         # Assign velocity
         msg.twist.twist.linear.x = float(sensor_data[0])
@@ -229,6 +232,7 @@ class DynamicsEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = Odometry()
         msg.header.frame_id = 'map'
+        msg.child_frame_id = 'odom'
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
         elif len(sensor_data) != 19:
@@ -251,19 +255,51 @@ class DynamicsEncoder(SensorPublisher):
         msg.pose.pose.orientation.z = float(sensor_data[17])
         msg.pose.pose.orientation.w = float(sensor_data[18])
 
+        msg.pose.covariance = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                               0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                               0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+
         return msg
 
-class DynamicsAccelEncoder(SensorPublisher):
+class DynamicsIMUEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
         
         self.message_type = Imu
 
+        self.use_covariance = True
+         # Define arbitrary IMU covariance matrices
+        self.orientation_covariance = np.array([
+            [0.01, 0, 0],
+            [0, 0.01, 0],
+            [0, 0, 0.01]
+        ])
+
+        self.angular_velocity_covariance = np.array([
+            [0.01, 0, 0],
+            [0, 0.01, 0],
+            [0, 0, 0.01]
+        ])
+
+        self.linear_acceleration_covariance = np.array([
+            [0.1, 0, 0],
+            [0, 0.1, 0],
+            [0, 0, 0.1]
+        ])
+
 
     def encode(self, sensor_data):
         msg = Imu()
-        msg.header.frame_id = 'map'
-        msg.orientation_covariance[0] = -1
+        msg.header.frame_id = 'base_link'
+
+        # Orientation Quaternion
+        msg.orientation.x = float(sensor_data[15])
+        msg.orientation.y = float(sensor_data[16])
+        msg.orientation.z = float(sensor_data[17])
+        msg.orientation.w = float(sensor_data[18])
 
         # Assign acceleration
         msg.linear_acceleration.x = float(sensor_data[0])
@@ -275,13 +311,18 @@ class DynamicsAccelEncoder(SensorPublisher):
         msg.angular_velocity.y = float(sensor_data[10])
         msg.angular_velocity.z = float(sensor_data[11])
 
+        if self.use_covariance:
+            msg.orientation_covariance = self.orientation_covariance.flatten().tolist()
+            msg.angular_velocity_covariance = self.angular_velocity_covariance.flatten().tolist()
+            msg.linear_acceleration_covariance = self.linear_acceleration_covariance.flatten().tolist()
+
         return msg
 
 class GPSEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
         
-        self.message_type = PoseWithCovarianceStamped
+        self.message_type = Odometry
 
 
         self.cov = [0.0] * 36
@@ -301,7 +342,7 @@ class GPSEncoder(SensorPublisher):
                     raise ValueError("Cov must be a list of length 3 or 3x3.")
 
     def encode(self, sensor_data):
-        msg = PoseWithCovarianceStamped()
+        msg = Odometry()
         msg.header.frame_id = 'map'
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
@@ -343,7 +384,7 @@ encoders = {
     'RotationSensor': RotationEncoder,
     'VelocitySensor': VelocityEncoder,
     'DynamicsSensorOdom': DynamicsEncoder,
-    'DynamicsSensorAccel': DynamicsAccelEncoder,
+    'DynamicsSensorIMU': DynamicsIMUEncoder,
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     # Add other sensor type encoders here...
