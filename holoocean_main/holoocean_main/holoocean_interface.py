@@ -30,7 +30,8 @@ class HolooceanInterface():
         #TODO: make sure dynamics sensor is enabled 
         if init:
             self.env = holoocean.make(scenario_cfg=scenario)
-            self.scenario = scenario
+            # self.scenario = scenario
+            self.scenario = self.env._scenario
             self.initialized = True
             self.sensors = self.create_sensor_list()
         else:

@@ -17,7 +17,7 @@ class TorpedoNode(Node):
         self.declare_parameter('params_file', '')
         file_path = self.get_parameter('params_file').get_parameter_value().string_value
 
-        self.interface = HolooceanInterface(file_path)
+        self.interface = HolooceanInterface(file_path, node=self)
 
         self.create_publishers() #Holoocean Publishers
         self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
@@ -55,7 +55,8 @@ class TorpedoNode(Node):
         self.draw = False
         if "draw_arrow" in self.interface.scenario:
             self.draw = self.interface.scenario["draw_arrow"]
-        self.use_rpm = True
+            
+        self.use_rpm = False
 
         #Create vehicle object attached to holoocean agent with dynamic parameters 
         #TODO: Change the vehicle that is being setup from the parameters

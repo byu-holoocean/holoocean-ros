@@ -1,4 +1,4 @@
-from holoocean_main.holoocean_interface import VehicleInterface
+from holoocean_main.holoocean_interface import HolooceanInterface
 
 import rclpy
 from rclpy.node import Node
@@ -16,7 +16,7 @@ class HolooceanNode(Node):
         
         file_path = self.get_parameter('params_file').get_parameter_value().string_value
 
-        self.interface = VehicleInterface(file_path)
+        self.interface = HolooceanInterface(file_path, node=self)
         
         #Create list of sensor publishers that have ros_publish=True based on scenario:
         self.sensors = []
