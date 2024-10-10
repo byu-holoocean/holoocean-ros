@@ -1,7 +1,7 @@
 services:
   my_service:
-    # build: path
     image: frostlab/holoros:latest
+    build: .
     container_name: holoocean
     user: ue4
     runtime: nvidia
@@ -9,5 +9,8 @@ services:
       - DISPLAY=$DISPLAY
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /path/to/ros2_ws:/home/ue4/ros2_ws
+      - /path/to/HoloOcean:/home/ue4/holoocean
+      - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean
     tty: true
     privileged: true
