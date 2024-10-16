@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, UCommand
+from holoocean_interfaces.msg import DVLSensorRange
+from frost_interfaces.msg import UCommand
 import numpy as np
 
 
