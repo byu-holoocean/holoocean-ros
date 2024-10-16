@@ -14,3 +14,4 @@ services:
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean
     tty: true
     privileged: true
+    network_mode: host
