@@ -5,7 +5,7 @@ from holoocean.dynamics import *
 import rclpy
 from rclpy.node import Node
 
-from holoocean_interfaces.msg import UCommand
+from holoocean_main.sensor_data_encode import UCommand
 from std_msgs.msg import Header
 
 
@@ -18,7 +18,7 @@ class FinsNode(Node):
         self.declare_parameter('params_file', '')
         file_path = self.get_parameter('params_file').get_parameter_value().string_value
 
-        self.interface = HolooceanInterface(file_path)
+        self.interface = HolooceanInterface(file_path, node=self)
 
         self.create_publishers() #Holoocean Publishers
         self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
