@@ -24,10 +24,19 @@ https://github.com/byu-holoocean/holoocean-ros/tree/main
 Change the file paths for the holoocean repository and the ros2 workspace in the docker compose file
 
 Run the following commands:
-
+docker compose up -d --build
 xhost +	 						#Give the container access to the screen
 docker exec -it holoocean bash 	#Enter into the container
+
+Run the installation: https://byu-holoocean.github.io/holoocean-docs/v1.0.0/usage/installation.html
+
 pip install holoocean/client 	#Install the holoocean 
+
+Installation of the worlds:
+	python3
+	import holoocean
+	holoocean.install('Ocean')
+
 
 You can check to make sure GPU access is available inside the container by running:
 	nvidia-smi
@@ -43,8 +52,7 @@ Then to launch the torpedo node, state estimation, and command node you can run
 	ros2 launch holoocean_main holoocean_torpedo_launch.py
 
 
-#DOCKER setup:
-
+#Docker setup:
 
 Make sure you have
 - container toolkit
