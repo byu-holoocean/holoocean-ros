@@ -1,4 +1,4 @@
-from holoocean_main.holoocean_interface import HolooceanInterface
+from holoocean_main.holoocean_interface import HolooceanInterface, np
 
 import rclpy
 from rclpy.node import Node
@@ -32,7 +32,7 @@ class HolooceanNode(Node):
 
         #TODO: Make sure it doesnt tick to fast
         #Tick Timer
-        period = self.interface.get_warp_period()
+        period = self.interface.get_time_warp_period()
         print("Time Warp Period:", period)
         self.timer = self.create_timer(period, self.tick_callback)
         self.callback_in_progress = False
@@ -64,15 +64,13 @@ class HolooceanNode(Node):
 
     def tick_callback(self):
         #Tick the envionment and publish data as many times as requested
-        if self.callback_in_progress:
-            self.get_logger().warn('Callback is being called faster than it finishes!')
+        
+        #PASS IN A COMMAND TO THE TICK
+        command = np.array(np.zeros(6),float)
 
-        self.callback_in_progress = True 
-      
-        state = self.interface.tick()
+        state = self.interface.tick(command)
         self.publish_sensor_data(state)
     
-        self.callback_in_progress = False 
         
 
 def main(args=None):
