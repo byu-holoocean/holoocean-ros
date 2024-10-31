@@ -31,9 +31,9 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[{'params_file': str(params_file)}], 
         remappings=[
-            ('/holoocean/ControlCommand', '/control_command'),
-            ('/holoocean/DepthSensor', '/depth_data'),
-            ('/holoocean/DynamicsSensorIMU', '/modem_imu')
+            ('/holoocean/ControlCommand', '/coug1/controls/command'),
+            ('/holoocean/DepthSensor', '/coug1/depth_data'),
+            ('/holoocean/DynamicsSensorIMU', '/coug1/modem_imu')
             ]
     )
 

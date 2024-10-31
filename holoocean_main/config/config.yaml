@@ -3,18 +3,20 @@
     holoocean_scenario:
       name: hovering_dynamics
       package_name: Ocean   
-      world: OpenWater
+      world: PierHarbor
       main_agent: auv0      
-      ticks_per_sec: 30
-      frames_per_sec: 180
+      ticks_per_sec: 15
+      frames_per_sec: 45
       draw_arrow: true
       show_viewport: true
+      weather:
+        - type: sunny
       agents:
         - agent_name: auv0
-          agent_type: TorpedoAUV
+          agent_type: CougUV
           control_scheme: 1  
-          location: [0, 0, -270]
-          rotation: [0, 0, 90]
+          location: [472, -550, -6]
+          rotation: [0, 0, 180]
           publish_commands: true
           sensors:
             - sensor_type: DynamicsSensor
@@ -45,7 +47,7 @@
             - sensor_type: RotationSensor
               ros_publish: true
             - sensor_type: DepthSensor
-              tick_every: 5
+              tick_every: 50
               ros_publish: true
               configuration:
                 Sigma: 0.001
@@ -65,7 +67,7 @@
             Cd: 0.42
             # K_nomoto:  
           actuator: 
-            fin_area: 0.00665
+            fin_area: 0.2665
             deltaMax_fin_deg: 25
             nMax: 1525
           autopilot: 
