@@ -11,8 +11,9 @@ Prerequisites
 
 2. **Container Toolkit**  
    Install the NVIDIA container toolkit by following the instructions [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.16.0/install-guide.html).
+   (Specifically the installation of the container toolkit and configuring docker for use with the nvidia container toolkit)
 
-3. **Docker**  
+4. **Docker**  
    Install Docker (tested with Docker version 20.10.17, build 100c701).
 
 HoloOcean Setup
