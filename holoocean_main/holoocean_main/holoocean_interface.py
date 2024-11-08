@@ -101,6 +101,7 @@ class HolooceanInterface():
                 config['sensor_name'] = "ControlCommand"
                 config['sensor_type'] = "ControlCommand"
                 config['agent_name'] = agent['agent_name']
+                config['state_name'] = 'ControlCommand'
                 sensors.append(encoder_class(config))
 
             for sensor in agent["sensors"]:
@@ -116,24 +117,25 @@ class HolooceanInterface():
                             sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                             sensor_copy['sensor_name'] = full_name
                             sensor_copy['agent_name'] = agent['agent_name']
-
+                            sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
                             sensors.append(encoder_class(sensor_copy))
                     else:
-                        sensor['agent_name'] = agent['agent_name']
+                        sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
+                        sensor_copy['agent_name'] = agent['agent_name']
+                        sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
                         encoder = encoders[sensor['sensor_type']]
-                        sensors.append(encoder(sensor))
+                        sensors.append(encoder(sensor_copy))
         
         return sensors
 
     def publish_sensor_data(self, state):
-        
         for sensor in self.sensors:
             try:
                 if self.multi_agent_scenario:
-                    msg = sensor.encode(state[sensor.agent_name][sensor.name])
+                    msg = sensor.encode(state[sensor.agent_name][sensor.state_name])
 
                 else:
-                    msg = sensor.encode(state[sensor.type])
+                    msg = sensor.encode(state[sensor.state_name])
 
                 # Header
                 if self.system_time:

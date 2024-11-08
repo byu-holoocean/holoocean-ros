@@ -16,6 +16,7 @@ class SensorPublisher(ABC):
         self.name = sensor_dict['sensor_name']
         self.type = sensor_dict['sensor_type']
         self.agent_name = sensor_dict['agent_name']
+        self.state_name = sensor_dict['state_name']
         if "configuration" in sensor_dict:
             self.config = sensor_dict['configuration']
         else:
@@ -64,7 +65,7 @@ class IMUEncoder(SensorPublisher):
            
     
     def encode(self, sensor_data):
-        msg = Imu()
+        msg = self.message_type()
         msg.header.frame_id = 'odom'
         msg.orientation_covariance[0] = -1
 
@@ -111,7 +112,7 @@ class DVLEncoder(SensorPublisher):
         
 
     def encode(self, sensor_data):
-        msg = TwistWithCovarianceStamped()
+        msg = self.message_type()
         msg.header.frame_id = 'odom'
         # Assign velocity
         msg.twist.twist.linear.x = float(sensor_data[0])
@@ -130,7 +131,7 @@ class DVLRangeEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        msg = DVLSensorRange()
+        msg = self.message_type()
 
         msg.range[0] = float(sensor_data[3])
         msg.range[1] = float(sensor_data[4])
@@ -151,7 +152,7 @@ class DepthEncoder(SensorPublisher):
                 self.cov[14] = float(self.config['Cov'])
 
     def encode(self, sensor_data):
-        msg = PoseWithCovarianceStamped()
+        msg = self.message_type()
         msg.header.frame_id = 'map'
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
@@ -180,7 +181,7 @@ class LocationEncoder(SensorPublisher):
                     raise ValueError("Cov must be a list of length 3 or 3x3.")
 
     def encode(self, sensor_data):
-        msg = PoseWithCovarianceStamped()
+        msg = self.message_type()
         msg.header.frame_id = 'odom'
         #Frame ID might be map
         msg.pose.pose.position.x = float(sensor_data[0])
@@ -197,7 +198,7 @@ class RotationEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        rpy_msg = Vector3Stamped()
+        rpy_msg = self.message_type()
         rpy_msg.vector.x = float(sensor_data[0])
         rpy_msg.vector.y = float(sensor_data[1])
         rpy_msg.vector.z = float(sensor_data[2])
@@ -211,7 +212,7 @@ class VelocityEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        msg = TwistWithCovarianceStamped()
+        msg = self.message_type()
         msg.header.frame_id = 'odom'
         #Frame id might actually be base link for velocity
 
@@ -230,7 +231,7 @@ class DynamicsEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        msg = Odometry()
+        msg = self.message_type()
         msg.header.frame_id = 'map'
         msg.child_frame_id = 'odom'
         if len(sensor_data) == 18:
@@ -292,7 +293,7 @@ class DynamicsIMUEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        msg = Imu()
+        msg = self.message_type()
         msg.header.frame_id = 'base_link'
 
         # Orientation Quaternion
@@ -342,7 +343,7 @@ class GPSEncoder(SensorPublisher):
                     raise ValueError("Cov must be a list of length 3 or 3x3.")
 
     def encode(self, sensor_data):
-        msg = Odometry()
+        msg = self.message_type()
         msg.header.frame_id = 'map'
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
@@ -359,7 +360,7 @@ class CommandEncoder(SensorPublisher):
 
 
     def encode(self, sensor_data):
-        msg = UCommand()
+        msg = self.message_type()
         msg.fin = self.fin
 
         #Control commands should be in a list with fins first and thruster last value in list (max 4 fins)
