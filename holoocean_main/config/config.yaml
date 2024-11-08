@@ -3,10 +3,10 @@
     holoocean_scenario:
       name: hovering_dynamics
       package_name: Ocean   
-      world: PierHarbor
+      world: OpenWater
       main_agent: auv0      
-      ticks_per_sec: 15
-      frames_per_sec: 45
+      ticks_per_sec: 60
+      frames_per_sec: 60
       draw_arrow: true
       show_viewport: true
       weather:
@@ -15,8 +15,8 @@
         - agent_name: auv0
           agent_type: CougUV
           control_scheme: 1  
-          location: [472, -550, -6]
-          rotation: [0, 0, 180]
+          location: [0, 0, 0]
+          rotation: [0, 0, 90]
           publish_commands: true
           sensors:
             - sensor_type: DynamicsSensor
@@ -24,35 +24,43 @@
                 UseCOM: true
                 UseRPY: false
               ros_publish: true
+            - sensor_type: DynamicsSensor
+              sensor_name: Modem
+              Hz: 10
+              configuration:
+                UseCOM: true
+                UseRPY: false
+              ros_publish: true
             - sensor_type: DVLSensor
               ros_publish: true
-              tick_every: 3
+              Hz: 12
               configuration:
                 VelCov: [0.001, 0.001, 0.001, 0.001]
             - sensor_type: IMUSensor
               ros_publish: true
-              tick_every: 3
+              Hz: 10
               configuration:
                 AccelCov: [0.001, 0.001, 0.001]
                 AngVelCov: [0.001, 0.001, 0.001]
             - sensor_type: GPSSensor
               ros_publish: true
-              tick_every: 30
+              Hz: 1
               configuration:
                 Cov: [0.0001, 0.0001, 0.0001]
                 Depth: 1.5
                 DepthCov: 0.05
-            - sensor_type: LocationSensor
-              ros_publish: true
+            # - sensor_type: LocationSensor
+            #   ros_publish: true
             - sensor_type: RotationSensor
               ros_publish: true
+              Hz: 10
             - sensor_type: DepthSensor
-              tick_every: 50
+              Hz: 12
               ros_publish: true
-              configuration:
-                Sigma: 0.001
-            - sensor_type: VelocitySensor
-              ros_publish: true
+              # configuration:
+              #   Sigma: 0.001
+            # - sensor_type: VelocitySensor
+            #   ros_publish: true
             # - sensor_type: SidescanSonar
             #   ros_publish: false
             #   conifguration:
@@ -67,7 +75,7 @@
             Cd: 0.42
             # K_nomoto:  
           actuator: 
-            fin_area: 0.2665
+            fin_area: 0.00665
             deltaMax_fin_deg: 25
             nMax: 1525
           autopilot: 

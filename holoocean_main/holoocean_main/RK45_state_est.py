@@ -2,7 +2,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TwistWithCovarianceStamped, Vector3Stamped, PoseWithCovarianceStamped
-from nav_msgs.msg import Odometry
+# from nav_msgs.msg import Odometry
 from scipy.integrate import solve_ivp
 from scipy.spatial.transform import Rotation
 
@@ -10,9 +10,9 @@ class RKStateEstimate(Node):
 
     def __init__(self):
         super().__init__('RK45_state_est')
-        self.state_pub = self.create_publisher(Odometry, 'dead_reckon', 10)
+        self.state_pub = self.create_publisher(PoseWithCovarianceStamped, 'dead_reckon', 10)
 
-        timer_frequency = 10
+        timer_frequency = 4.3
         timer_period = 1/timer_frequency  # seconds publish vehicle status update
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
@@ -104,10 +104,10 @@ class RKStateEstimate(Node):
             quaternion = Rotation.from_euler('zyx', [self.yaw, self.pitch, self.roll], True).as_quat()
 
             # Publish new state
-            msg = Odometry()
+            msg = PoseWithCovarianceStamped()
             msg.header.stamp = self.get_clock().now().to_msg()
             msg.header.frame_id = 'odom'
-            msg.child_frame_id = 'base_link'
+            # msg.child_frame_id = 'base_link'
 
             msg.pose.pose.position.x = float(self.position[0])
             msg.pose.pose.position.y = float(self.position[1])
