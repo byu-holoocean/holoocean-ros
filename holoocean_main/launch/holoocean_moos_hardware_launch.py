@@ -21,13 +21,12 @@ def generate_launch_description():
     # List contents of the directory to debug
     
     holoocean_namespace = 'holoocean'
-    output_namespace = '/coug1'
-    print("launching with namespace", output_namespace)
+    output_namespace = '/coug3'
 
     fins_node = launch_ros.actions.Node(
         name='fins_node',
         package='holoocean_main',
-        executable='fins_node',  
+        executable='moos_fins_node',  
         namespace=holoocean_namespace,
         output='screen',
         emulate_tty=True,
@@ -36,7 +35,8 @@ def generate_launch_description():
             ('/holoocean/ControlCommand', f'{output_namespace}/controls/command'),
             ('/holoocean/DepthSensor', f'{output_namespace}/depth_data'),
             ('/holoocean/ModemIMU', f'{output_namespace}/modem_imu'),
-            ('/holoocean/GPSSensor', f'{output_namespace}/gps_odom')
+            ('/holoocean/GPSSensor', f'{output_namespace}/gps_odom'),
+            ('/holoocean/reset_holoocean', f'{output_namespace}/reset_holoocean'),
             ]
     )
 

@@ -16,7 +16,7 @@
           agent_type: CougUV
           control_scheme: 1  
           location: [0, 0, 0]
-          rotation: [0, 0, 90]
+          rotation: [0, 0, 0]
           publish_commands: true
           sensors:
             - sensor_type: DynamicsSensor
@@ -34,21 +34,21 @@
             - sensor_type: DVLSensor
               ros_publish: true
               Hz: 12
-              configuration:
-                VelCov: [0.001, 0.001, 0.001, 0.001]
+              # configuration:
+                # VelCov: [0.001, 0.001, 0.001, 0.001]
             - sensor_type: IMUSensor
               ros_publish: true
               Hz: 10
-              configuration:
-                AccelCov: [0.001, 0.001, 0.001]
-                AngVelCov: [0.001, 0.001, 0.001]
+              # configuration:
+              #   AccelCov: [0.001, 0.001, 0.001]
+              #   AngVelCov: [0.001, 0.001, 0.001]
             - sensor_type: GPSSensor
               ros_publish: true
               Hz: 1
               configuration:
-                Cov: [0.0001, 0.0001, 0.0001]
-                Depth: 1.5
-                DepthCov: 0.05
+                # Cov: [0.0001, 0.0001, 0.0001]
+                Depth: 10.5
+                # DepthCov: 0.05
             # - sensor_type: LocationSensor
             #   ros_publish: true
             - sensor_type: RotationSensor
@@ -58,7 +58,7 @@
               Hz: 12
               ros_publish: true
               # configuration:
-              #   Sigma: 0.001
+              #   Cov: 0.001
             # - sensor_type: VelocitySensor
             #   ros_publish: true
             # - sensor_type: SidescanSonar
@@ -67,9 +67,9 @@
             #     ViewRegion: true
           dynamics: 
             mass: 16
-            length: 1.6
+            length: 0.5
             rho: 1026
-            diam: 0.19
+            diam: 0.1
             r_bg: [0, 0, 0.02]
             r_bb: [0, 0, 0]
             Cd: 0.42
@@ -78,6 +78,8 @@
             fin_area: 0.2665
             deltaMax_fin_deg: 25
             nMax: 1525
+            CL_delta_r: 1.5
+            CL_delta_s: 1.5
           autopilot: 
             depth:
               wn_d_z: 0.2
