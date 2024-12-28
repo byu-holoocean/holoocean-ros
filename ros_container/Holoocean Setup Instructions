@@ -26,6 +26,18 @@ Change the file paths for the holoocean repository and the ros2 workspace in the
 Run the following commands:
 docker compose up -d --build
 xhost +	 						#Give the container access to the screen
+
+Pip install holoocena from outside the container
+docker exec -it holoocean bash -c "pip install ~/holoocean/client"
+
+Install worlds (if not installed already)
+docker exec -it holoocean python3 -c "import holoocean; holoocean.install('Ocean')"
+
+Build ROS2 workspace outside the container 
+docker exec -it holoocean bash -c "source /opt/ros/humble/setup.bash && cd ~/ros2_ws && colcon build"
+
+OR enter the container with this command:
+
 docker exec -it holoocean bash 	#Enter into the container
 
 Run the installation: https://byu-holoocean.github.io/holoocean-docs/v1.0.0/usage/installation.html

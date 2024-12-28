@@ -1,0 +1,1 @@
+docker exec -it holoocean bash -c "source ~/ros2_ws/install/setup.bash && ros2 launch holoocean_main holoocean_torpedo_launch.py"
