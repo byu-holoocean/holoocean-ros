@@ -52,6 +52,7 @@ USER ue4
 WORKDIR /home/ue4
 RUN mkdir -p .local/lib
 RUN mkdir -p .local/share
+RUN mkdir -p ros2_ws/src
 
 
 # Default command
