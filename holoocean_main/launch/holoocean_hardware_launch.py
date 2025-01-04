@@ -12,9 +12,6 @@ import os
 def generate_launch_description():
     print('Launching HoloOcean Vehicle Simulation')
 
-    # Set log level
-    log_level = 'info'
-
     base = Path(get_package_share_directory('holoocean_main'))
     params_file = base / 'config' / 'config.yaml'
 
@@ -30,13 +27,10 @@ def generate_launch_description():
         executable='fins_node',  
         namespace=holoocean_namespace,
         output='screen',
-        emulate_tty=True,
         parameters=[{'params_file': str(params_file)}], 
         remappings=[
             ('/holoocean/ControlCommand', f'{output_namespace}/controls/command'),
-            ('/holoocean/DepthSensor', f'{output_namespace}/depth_data'),
             ('/holoocean/ModemIMU', f'{output_namespace}/modem_imu'),
-            ('/holoocean/GPSSensor', f'{output_namespace}/gps_odom')
             ]
     )
 
@@ -48,11 +42,10 @@ def generate_launch_description():
         executable='state_estimate',  
         namespace=holoocean_namespace,
         output='screen',
-        emulate_tty=True,
         parameters=[{'params_file': str(params_file)}],
-        remappings=[
-            ('/holoocean/dead_reckon', f'{output_namespace}/dvl_dead_reckoning')
-        ]  
+        # remappings=[
+        #     # ('/holoocean/dead_reckon', f'{output_namespace}/dvl_dead_reckoning')
+        # ]  
     )
 
 
