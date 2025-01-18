@@ -27,6 +27,7 @@ def generate_launch_description():
         executable='fins_node',  
         namespace=holoocean_namespace,
         output='screen',
+        emulate_tty=True,
         parameters=[{'params_file': str(params_file)}], 
         remappings=[
             ('/holoocean/ControlCommand', f'{output_namespace}/controls/command'),

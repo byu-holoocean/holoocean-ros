@@ -1,6 +1,4 @@
-from holoocean_main.holoocean_interface import HolooceanInterface
-from holoocean.vehicle_dynamics import *
-from holoocean.dynamics import *
+from holoocean_main.holoocean_interface import *
 
 import rclpy
 from rclpy.node import Node
@@ -37,22 +35,22 @@ class FinsNode(Node):
         )
 
         ######### CUSTOM SIMULATION INIT ########
-
-        self.vehicle = threeFinInd(self.interface.scenario, 'auv0','manualControl')
-        self.torpedo_dynamics = FossenDynamics(self.vehicle,self.interface.get_time_warp_period())  
+        self.main_agent = 'auv0'
+        self.fossen = FossenInterface([self.main_agent], self.interface.scenario, self.interface.get_time_warp_period())
 
    
     def tick_callback(self):
         #Tick the envionment and publish data as many times as requested
         state = self.interface.tick(self.accel)
     
-        self.accel = self.torpedo_dynamics.update(state) #Calculate accelerations to be applied to HoloOcean agent
+        self.accel = self.fossen.update(self.main_agent, state) #Calculate accelerations to be applied to HoloOcean agent
 
         self.interface.publish_sensor_data(state)
 
     def callback_set_fins(self, msg):
-        u_control = np.zeros(self.vehicle.dimU, np.float64)
-        for i in range(self.vehicle.dimU - 1):
+        vehicle = self.fossen.vehicles[self.main_agent]
+        u_control = np.zeros(vehicle.dimU, np.float64)
+        for i in range(vehicle.dimU - 1):
             u_control[i] = msg.fin[i]
             # print(i, u_control[i])
         
@@ -60,7 +58,7 @@ class FinsNode(Node):
         
         u_control[-1] = float(msg.thruster)
 
-        self.torpedo_dynamics.set_u_control_rad(u_control)     
+        self.fossen.set_u_control_rad(self.main_agent, u_control)     
 
     def create_publishers(self):
         for sensor in self.interface.sensors:
