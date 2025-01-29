@@ -21,7 +21,7 @@ source /opt/ros/humble/setup.bash
 colcon build
 source install/setup.bash
 
-ros2 launch holoocean_main torpedo_launch.py
+ros2 launch holoocean_main holoocean_torpedo_launch.py
 ```
 
 Refer to the ROS 2 documentation to build nodes that can control the HoloOcean environment.
