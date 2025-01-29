@@ -145,51 +145,6 @@ class MultiWaypointNavigator(Node):
         except Exception as e:
             self.get_logger().error(f"Error in simulation: {e}")
 
-
-    # @logger.catch
-    # def timer_callback(self):
-    #     try:
-    #         # Step simulation and get the state
-    #         state = self.env.tick()
-
-    #         # Surface Vehicle Position and Waypoint Navigation
-    #         sv_position = state["sv"]["GPSSensor"][0:3]
-    #         waypoint_sv = self.locations_sv[self.idx_sv]
-    #         direction_sv = np.array(waypoint_sv) - sv_position[:2]
-    #         distance_sv = np.linalg.norm(direction_sv)
-    #         normalized_direction_sv = direction_sv / distance_sv if distance_sv > 0 else np.zeros(2)
-    #         sv_action = np.array([*normalized_direction_sv, 5], dtype=np.float32)
-    #         self.get_logger().info(f"SV Position: {sv_position}, Distance: {distance_sv}, Action: {sv_action}")
-
-    #         # Torpedo AUV (AUV0)
-    #         auv0_position = state["auv0"]["IMUSensor"][0]  # Extract the first row if multidimensional
-    #         waypoint_auv0 = self.locations_auv0[self.idx_auv0]
-    #         direction_auv0 = np.array(waypoint_auv0) - auv0_position[:2]
-    #         distance_auv0 = np.linalg.norm(direction_auv0)
-    #         normalized_direction_auv0 = direction_auv0 / distance_auv0 if distance_auv0 > 0 else np.zeros(2)
-    #         speed_auv0 = min(distance_auv0 * 5, 75)
-    #         auv0_action = np.array([*normalized_direction_auv0, 0, 0, speed_auv0], dtype=np.float32)
-    #         self.get_logger().info(f"AUV0 Position: {auv0_position}, Distance: {distance_auv0}, Speed: {speed_auv0}")
-
-    #         # Hovering AUV (AUV1)
-    #         auv1_position = state["auv1"]["DVLSensor"][:, 0:3].mean(axis=0)  # Average across rows if multidimensional
-    #         waypoint_auv1 = self.locations_auv1[self.idx_auv1]
-    #         direction_auv1 = np.array(waypoint_auv1) - auv1_position[:2]
-    #         distance_auv1 = np.linalg.norm(direction_auv1)
-    #         normalized_direction_auv1 = direction_auv1 / distance_auv1 if distance_auv1 > 0 else np.zeros(2)
-    #         speed_auv1 = min(distance_auv1 * 2 + 10, 50)
-    #         auv1_action = np.array([*normalized_direction_auv1, 0, 0, *([speed_auv1] * 4)], dtype=np.float32)
-    #         self.get_logger().info(f"AUV1 Position: {auv1_position}, Distance: {distance_auv1}, Speed: {speed_auv1}")
-
-    #         # Act in the environment
-    #         self.env.act("sv", sv_action)
-    #         self.env.act("auv0", auv0_action)
-    #         self.env.act("auv1", auv1_action)
-
-    #     except Exception as e:
-    #         self.get_logger().error(f"Error during simulation step: {e}")
-
-
     @logger.catch
     def save_path(self):
         with open("path_coordinates.txt", "w") as f:
