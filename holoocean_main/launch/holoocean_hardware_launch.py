@@ -31,7 +31,7 @@ def generate_launch_description():
         parameters=[{'params_file': str(params_file)}], 
         remappings=[
             ('/holoocean/ControlCommand', f'{output_namespace}/controls/command'),
-            ('/holoocean/ModemIMU', f'{output_namespace}/modem_imu'),
+            # ('/holoocean/ModemIMU', f'{output_namespace}/modem_imu'),
             ]
     )
 
