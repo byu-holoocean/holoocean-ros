@@ -5,18 +5,20 @@
       package_name: Ocean   
       world: PierHarbor
       main_agent: auv0      
-      ticks_per_sec: 60
-      frames_per_sec: 60
+      ticks_per_sec: 30
+      frames_per_sec: 0
       draw_arrow: true
-      show_viewport: true
+      show_viewport: false
       weather:
         - type: sunny
       agents:
         - agent_name: auv0
           agent_type: CougUV
           control_scheme: 1  
-          location: [0, 0, 0]
-          rotation: [0, 0, 0]
+          # location: [227, 63, -285]
+          # location: [450, 144, -287] Open Water good spot
+          location: [497, -631, -7]
+          rotation: [0, 0, 90]
           publish_commands: true
           sensors:
             - sensor_type: DynamicsSensor
@@ -34,8 +36,9 @@
             - sensor_type: DVLSensor
               ros_publish: true
               Hz: 12
-              # configuration:
-                # VelCov: [0.001, 0.001, 0.001, 0.001]
+              configuration:
+                VelCov: [0.001, 0.001, 0.001, 0.001]
+                MaxRange: 100
             - sensor_type: IMUSensor
               ros_publish: true
               Hz: 10
@@ -65,43 +68,54 @@
             #   ros_publish: false
             #   conifguration:
             #     ViewRegion: true
-          dynamics: 
-            mass: 16
-            length: 0.5
-            rho: 1026
-            diam: 0.1
-            r_bg: [0, 0, 0.02]
-            r_bb: [0, 0, 0]
-            Cd: 0.42
-            # K_nomoto:  
+            # - sensor_type: RGBCamera
+            #   ros_publish: true
+            #   sensor_name: "TempViewport"
+            #   socket: "CameraSocket"
+            #   location: [-0.7, -1.0, -3.0]
+            #   rotation: [0.0, -80.0, 0.0]
+            #   Hz: 30
+            #   configuration:
+            #     CaptureWidth: 1200
+            #     CaptureHeight: 1200
+          # dynamics: 
+          #   mass: 16
+          #   length: 0.5
+          #   rho: 1026
+          #   diam: 0.1
+          #   r_bg: [0, 0, 0.02]
+          #   r_bb: [0, 0, 0]
+          #   Cd: 0.42
+          #   # K_nomoto:  
           actuator: 
-            fin_area: 0.2665
+            fin_count: 3
+            fin_offset_deg: 270
+            fin_area: 0.00665 #0.00665
             deltaMax_fin_deg: 25
             nMax: 1525
-            CL_delta_r: 1.5
-            CL_delta_s: 1.5
-          autopilot: 
-            depth:
-              wn_d_z: 0.2
-              Kp_z: 0.5
-              T_z: 100
-              Kp_theta: 4.0
-              Kd_theta: 2.3 #2.3
-              Ki_theta: 0.6 #0.6
-              K_w: 5.0
-              theta_max_deg: 30
-            heading:
-              wn_d: 0.2
-              zeta_d: 0.8
-              r_max: 0.9
-              lam: 0.1
-              phi_b: 0.1
-              K_d: 0.0 #0.5
-              K_sigma: 0.05
-            surge:
-              kp_surge: 700.0
-              ki_surge: 0.0 #100.0
-              kd_surge: 0.0 #40.0
+            CL_delta: 1.5
+          # autopilot: 
+          #   depth:
+          #     wn_d_z: 0.2
+          #     Kp_z: 0.5
+          #     T_z: 100
+          #     Kp_theta: 4.0
+          #     Kd_theta: 2.3 #2.3
+          #     Ki_theta: 0.6 #0.6
+          #     K_w: 5.0
+          #     theta_max_deg: 30
+          #   heading:
+          #     wn_d: 0.2
+          #     zeta_d: 0.8
+          #     r_max: 0.9
+          #     lam: 0.1
+          #     phi_b: 0.1
+          #     K_d: 0.0 #0.5
+          #     K_sigma: 0.05
+          #   surge:
+          #     kp_surge: 700.0
+          #     ki_surge: 0.0 #100.0
+          #     kd_surge: 0.0 #40.0
     
 /controller_node:
   ros_parameters:
