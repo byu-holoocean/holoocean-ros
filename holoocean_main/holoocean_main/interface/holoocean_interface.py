@@ -2,8 +2,8 @@ import numpy as np
 import holoocean
 
 from pathlib import Path
-import json
 from holoocean_main.interface.sensor_data_encode import encoders, multi_publisher_sensors
+from holoocean.fossen_interface import FossenInterface, get_vehicle_model
 
 #TODO: Maybe add sensor data encode to this file
 
@@ -13,57 +13,56 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, init=True, node=None):
+    def __init__(self, scenario_path, node=None):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
         """
+        # Class Variables
+        self.fossen_agents = []
+        self.sensors = []
         self.node = node
-        scenario_path = Path(scenario_path)
+
         # TODO error handling to make sure its a json format?
+        scenario_path = Path(scenario_path)
         scenario = holoocean.packagemanager.load_scenario_file(scenario_path)
+        # TODO update holoocean to acccepth the scenario file path
+        self.env = holoocean.make(scenario_cfg=scenario)
+        self.state = self.env.tick()
+        self.scenario = self.env._scenario
         
-        #TODO: Make a parameter to use the system time
-        self.system_time = True
+        self.parse_scenario()
         
-        #TODO: make sure dynamics sensor is enabled 
-        if init:
-            self.env = holoocean.make(scenario_cfg=scenario)
-            # self.scenario = scenario
-            self.scenario = self.env._scenario
-            self.initialized = True
-            self.sensors = self.create_sensor_list()
-            self.create_publishers()
-        else:
-            self.scenario = scenario
-            self.initialized = False
+        # TODO fix initialized
+        self.initialized = True
+        self.create_sensor_list()
+        self.create_publishers()
+        
+
+        
+
+    def initialize_fossen(self):
+        # TODO this could be simplified but on the holoocean side
+        # By creating the fossen models on the holoocean side
+        self.fossen_agents = [agent["agent_name"] for agent in self.scenario.get("agents", []) if "fossen_model" in agent]
+        self.fossen = FossenInterface(self.fossen_agents, self.scenario)
 
 
+    def check_multi_agent(self):
+        self.multi_agent_scenario = len(self.scenario.get("agents", [])) > 1
 
-    def parse_scenario(self, path):
-        file_path = Path(path)
-        scenario = None
+    def parse_scenario(self):
+        self.check_multi_agent()
+        self.initialize_fossen()
 
-        with file_path.open() as params_file:
-            scenario = json.load(params_file)
-
-        return scenario
-    
 
     def create_sensor_list(self):
         scenario = self.scenario
 
-        if len(scenario["agents"]) > 1:
-            self.multi_agent_scenario = True
-            print("Give sensors unique names that are reported on multiple agents")
-        else:
-            self.multi_agent_scenario = False
-
-        sensors = []
-
         for agent in scenario["agents"]:
             #For each agent the control surface commands can be published 
             #TODO: Handle Multi agent scenario here
+            # TODO move publish commands to the yaml ros params
             if "publish_commands" in agent and agent["publish_commands"]==True:
                 encoder_class = encoders.get("ControlCommand")
                 config = {}
@@ -71,7 +70,7 @@ class HolooceanInterface():
                 config['sensor_type'] = "ControlCommand"
                 config['agent_name'] = agent['agent_name']
                 config['state_name'] = 'ControlCommand'
-                sensors.append(encoder_class(config))
+                self.sensors.append(encoder_class(config))
 
             for sensor in agent["sensors"]:
                 if sensor['ros_publish']:
@@ -87,22 +86,23 @@ class HolooceanInterface():
                             sensor_copy['sensor_name'] = full_name
                             sensor_copy['agent_name'] = agent['agent_name']
                             sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
-                            sensors.append(encoder_class(sensor_copy))
+                            self.sensors.append(encoder_class(sensor_copy))
                     else:
                         sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                         sensor_copy['agent_name'] = agent['agent_name']
                         sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
                         encoder = encoders[sensor['sensor_type']]
-                        sensors.append(encoder(sensor_copy))
+                        self.sensors.append(encoder(sensor_copy))
         
-        return sensors
     
     def create_publishers(self):
         for sensor in self.sensors:
-            sensor.publisher = self.node.create_publisher(sensor.message_type, sensor.name, 10)
+            topic_name = sensor.agent_name + '/' + sensor.name
+            sensor.publisher = self.node.create_publisher(sensor.message_type, topic_name, 10)
 
-
-    def publish_sensor_data(self, state):
+    def publish_sensor_data(self):
+        # TODO check if i should copy here
+        state = self.state.copy()
         for sensor in self.sensors:
             try:
                 if self.multi_agent_scenario:
@@ -112,12 +112,9 @@ class HolooceanInterface():
                     msg = sensor.encode(state[sensor.state_name])
 
                 # Header
-                if self.system_time:
-                    # TODO do sim time
-                    msg.header.stamp = self.node.get_clock().now().to_msg()
-                else:
-                    msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
-                    msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
+                # TODO publish sim time on clock 
+                msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
+                msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
 
                 sensor.publisher.publish(msg)
             except KeyError:
@@ -133,12 +130,21 @@ class HolooceanInterface():
         Step the holoocean enviornment and the vehicle dynamics 
         Return the state
         """
-        command = self.fossen.update(self.main_agent, self.state) #Calculate accelerations to be applied to HoloOcean agent
-        # TODO rework this to make easier for multi agent scenarios
-        # TODO tick instead of step
-        self.state = self.env.step(command) #To publish data to ros correctly, we should only tick the enviornment once each step
+        
+        for agent in self.scenario.get("agents", []):
+            agent_name = agent["agent_name"]
 
-        self.publish_sensor_data(self.state)
+            # TODO work here for non fossen agents
+            command = np.zeros(6 ,float)
+
+            if agent_name in self.fossen_agents:
+                command = self.fossen.update(agent_name, self.state) #Calculate accelerations to be applied to HoloOcean agent
+
+            self.env.act(agent_name, command)
+
+        self.state = self.env.tick() #To publish data to ros correctly, we should only tick the enviornment once each step
+
+        self.publish_sensor_data()
 
 
         # TODO fix this and fix when its a publisher vs subscriber
@@ -189,5 +195,27 @@ class HolooceanInterface():
         return self.get_period() / self.get_time_warp()
 
 
+    def set_u_command_callback(self, msg):
+        # TODO fix this and do error handling when i fix the ucommand message
+        vehicle = self.fossen.vehicles[msg.header.frame_id]
+        u_control = np.zeros(vehicle.dimU, np.float64)
+        for i in range(vehicle.dimU - 1):
+            u_control[i] = msg.fin[i]
+            # print(i, u_control[i])
+        
+        u_control = np.deg2rad(u_control)
+        
+        u_control[-1] = float(msg.thruster)
 
+        self.fossen.set_u_control_rad(self.main_agent, u_control)     
+
+    # TODO add error handling for frame_id and that agent has that type of goal
+    def depth_callback(self, msg):
+        self.fossen.set_depth_goal(msg.header.frame_id, msg.data)
+
+    def heading_callback(self, msg):
+        self.fossen.set_heading_goal(msg.header.frame_id, msg.data)
+
+    def speed_callback(self, msg):
+        self.fossen.set_rpm_goal(msg.header.frame_id, int(msg.data))
 

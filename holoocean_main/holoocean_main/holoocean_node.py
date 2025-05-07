@@ -4,8 +4,9 @@ from holoocean_main.interface.holoocean_interface import *
 from ament_index_python.packages import get_package_share_directory
 import os
 
-from holoocean_main.interface.sensor_data_encode import UCommand
+from holoocean_interfaces.msg import UCommand, DesiredCommand
 from std_msgs.msg import Float64
+
 
 package_name = 'holoocean_main'
 
@@ -40,52 +41,25 @@ class HoloOceanNode(Node):
         
         ######## CUSTOM SUBSCRIBERS ############
         
-        self.ucommand_sub = self.create_subscription(UCommand, 'ControlCommand', self.callback_set_fins, 10)
+        self.ucommand_sub = self.create_subscription(UCommand, 'ControlCommand', self.interface.set_u_command_callback, 10)
 
-        self.depth_sub = self.create_subscription(Float64, 'depth', self.depth_callback, 10)
-        self.heading_sub = self.create_subscription(Float64, 'heading', self.heading_callback, 10)
-        self.speed_sub = self.create_subscription(Float64, 'speed', self.speed_callback, 10)
+        self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.interface.depth_callback, 10)
+        self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.interface.heading_callback, 10)
+        self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.interface.speed_callback, 10)
 
-        ######### CUSTOM SIMULATION INIT ########
-        self.main_agent = 'auv0'
-        self.fossen = FossenInterface([self.main_agent], self.interface.scenario, self.interface.get_time_warp_period())
 
     def tick_callback(self):
         #Tick the envionment and publish data as many times as requested
         self.interface.tick()
+        # TODO clock message
         
         # TODO fix this
         # if self.draw:
         #     self.draw_arrow()
 
 
-    def callback_set_fins(self, msg):
-        # TODO fix this
-        vehicle = self.fossen.vehicles[self.main_agent]
-        u_control = np.zeros(vehicle.dimU, np.float64)
-        for i in range(vehicle.dimU - 1):
-            u_control[i] = msg.fin[i]
-            # print(i, u_control[i])
-        
-        u_control = np.deg2rad(u_control)
-        
-        u_control[-1] = float(msg.thruster)
-
-        self.fossen.set_u_control_rad(self.main_agent, u_control)     
-
-    # TODO fix these below
-    def depth_callback(self,msg):
-        self.vehicle.set_depth_goal(msg.data)
-
-    def heading_callback(self,msg):
-        self.vehicle.set_heading_goal(msg.data)
-
-    def speed_callback(self, msg):
-        if self.use_rpm:
-            self.vehicle.set_rpm_goal(int(msg.data))
-        else:
-            self.vehicle.set_surge_goal(msg.data)
-
+    # TODO reset the enviornment service call
+    
    
     def draw_arrow(self, state):
         # For plotting HSD and arrows 
