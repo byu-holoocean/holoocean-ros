@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
-from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Imu, Image
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, UCommand
+from holoocean_interfaces.msg import DVLSensorRange
+from frost_interfaces.msg import UCommand
 import numpy as np
 
-
+# TODO make a not about how the Dynamics Sensor IMU is not in local frame
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
     'DynamicsSensor': ['Odom', 'IMU']
@@ -66,7 +67,7 @@ class IMUEncoder(SensorPublisher):
     
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'odom'
+        msg.header.frame_id = 'base_link'
         msg.orientation_covariance[0] = -1
 
         # Assign acceleration
@@ -113,7 +114,7 @@ class DVLEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'odom'
+        msg.header.frame_id = 'base_link'
         # Assign velocity
         msg.twist.twist.linear.x = float(sensor_data[0])
         msg.twist.twist.linear.y = float(sensor_data[1])
@@ -153,7 +154,7 @@ class DepthEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'map'
+        msg.header.frame_id = 'base_link'
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
         return msg
@@ -213,7 +214,7 @@ class VelocityEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'odom'
+        msg.header.frame_id = 'base_link'
         #Frame id might actually be base link for velocity
 
         # Assign velocity
@@ -232,8 +233,8 @@ class DynamicsEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'map'
-        msg.child_frame_id = 'odom'
+        msg.header.frame_id = 'odom'
+        msg.child_frame_id = 'base_link'
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
         elif len(sensor_data) != 19:
@@ -294,7 +295,7 @@ class DynamicsIMUEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'base_link'
+        msg.header.frame_id = 'holoocean_global_frame'
 
         # Orientation Quaternion
         msg.orientation.x = float(sensor_data[15])
@@ -344,7 +345,7 @@ class GPSEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'map'
+        msg.header.frame_id = 'gps_link'
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
         msg.pose.pose.position.z = float(sensor_data[2])
@@ -372,6 +373,39 @@ class CommandEncoder(SensorPublisher):
         msg.thruster = int(sensor_data[-1])
 
         return msg
+    
+class ImageEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = Image
+    
+    def encode(self, sensor_data):
+        msg = self.message_type()
+
+        # Remove the alpha channel (convert RGBA -> RGB)
+        num_channels = 3  
+        sensor_data = sensor_data[:, :, :num_channels]  # Keep only the first 3 channels
+
+        # Ensure correct height and width
+        msg.height = sensor_data.shape[0]  # Rows
+        msg.width = sensor_data.shape[1]   # Columns
+
+        # Step calculation
+        msg.step = msg.width * num_channels  
+        msg.encoding = "bgr8"
+        msg.is_bigendian = 0
+
+        # Convert to bytes
+        msg.data = sensor_data.tobytes()
+
+        # Debugging: Check expected vs actual size
+        expected_size = msg.height * msg.step
+        actual_size = len(msg.data)
+        if expected_size != actual_size:
+            print(f"ERROR: Expected data size {expected_size}, but got {actual_size}")
+
+        return msg
 
 # Define other encoders similarly...
 
@@ -388,5 +422,6 @@ encoders = {
     'DynamicsSensorIMU': DynamicsIMUEncoder,
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
+    'RGBCamera': ImageEncoder,
     # Add other sensor type encoders here...
 }

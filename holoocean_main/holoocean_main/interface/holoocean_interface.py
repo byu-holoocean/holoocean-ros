@@ -3,8 +3,7 @@ import holoocean
 
 from pathlib import Path
 import json
-import yaml
-from holoocean_main.sensor_data_encode import encoders, multi_publisher_sensors
+from holoocean_main.interface.sensor_data_encode import encoders, multi_publisher_sensors
 
 #TODO: Maybe add sensor data encode to this file
 
@@ -21,9 +20,9 @@ class HolooceanInterface():
         """
         self.node = node
         scenario_path = Path(scenario_path)
+        # TODO error handling to make sure its a json format?
+        scenario = holoocean.packagemanager.load_scenario_file(scenario_path)
         
-        scenario = self.parse_scenario_yaml(scenario_path)
-
         #TODO: Make a parameter to use the system time
         self.system_time = True
         
@@ -34,6 +33,7 @@ class HolooceanInterface():
             self.scenario = self.env._scenario
             self.initialized = True
             self.sensors = self.create_sensor_list()
+            self.create_publishers()
         else:
             self.scenario = scenario
             self.initialized = False
@@ -49,37 +49,6 @@ class HolooceanInterface():
 
         return scenario
     
-    def find_holoocean_scenario(self, yaml_content):
-        """Recursively search for 'holoocean_scenario' in the YAML content."""
-        if isinstance(yaml_content, dict):
-            for key, value in yaml_content.items():
-                if key == "holoocean_scenario":
-                    return value
-                else:
-                    result = self.find_holoocean_scenario(value)
-                    if result is not None:
-                        return result
-        elif isinstance(yaml_content, list):
-            for item in yaml_content:
-                result = self.find_holoocean_scenario(item)
-                if result is not None:
-                    return result
-        return None
-
-    def parse_scenario_yaml(self, scenario_path):
-        with open(scenario_path, 'r') as file:
-            yaml_content = yaml.safe_load(file)
-        
-        holoocean_scenario_yaml = self.find_holoocean_scenario(yaml_content)
-        
-        if holoocean_scenario_yaml is None:
-            raise KeyError("Could not find 'holoocean_scenario' in the YAML file.")
-        
-        # # Convert the 'holoocean_scenario' part to JSON
-        # scenario = json.dumps(holoocean_scenario_yaml, indent=4)
-        # print(holoocean_scenario_yaml)
-
-        return holoocean_scenario_yaml
 
     def create_sensor_list(self):
         scenario = self.scenario
@@ -127,6 +96,11 @@ class HolooceanInterface():
                         sensors.append(encoder(sensor_copy))
         
         return sensors
+    
+    def create_publishers(self):
+        for sensor in self.sensors:
+            sensor.publisher = self.node.create_publisher(sensor.message_type, sensor.name, 10)
+
 
     def publish_sensor_data(self, state):
         for sensor in self.sensors:
@@ -139,6 +113,7 @@ class HolooceanInterface():
 
                 # Header
                 if self.system_time:
+                    # TODO do sim time
                     msg.header.stamp = self.node.get_clock().now().to_msg()
                 else:
                     msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
@@ -153,14 +128,26 @@ class HolooceanInterface():
                 # Handle other exceptions
                 print(f"Error processing sensor: {sensor.name}, type: {sensor.type}, error: {str(e)}")
 
-    def tick(self, command):
+    def tick(self):
         """
         Step the holoocean enviornment and the vehicle dynamics 
         Return the state
         """
-        state = self.env.step(command) #To publish data to ros correctly, we should only tick the enviornment once each step
+        command = self.fossen.update(self.main_agent, self.state) #Calculate accelerations to be applied to HoloOcean agent
+        # TODO rework this to make easier for multi agent scenarios
+        # TODO tick instead of step
+        self.state = self.env.step(command) #To publish data to ros correctly, we should only tick the enviornment once each step
 
-        return state
+        self.publish_sensor_data(self.state)
+
+
+        # TODO fix this and fix when its a publisher vs subscriber
+        # #TODO: Handle the multi agent case for the control commands here
+        # fins = np.rad2deg(self.torpedo_dynamics.u_actual[:-1])
+        # thruster = self.torpedo_dynamics.u_actual[-1]
+
+        # state["ControlCommand"] = np.append(fins,thruster)
+
     
     def get_scenario(self):
         if self.initialized:

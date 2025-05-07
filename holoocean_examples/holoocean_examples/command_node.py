@@ -1,4 +1,4 @@
-from holoocean_main.holoocean_interface import HolooceanInterface
+from holoocean_main.interface.holoocean_interface import HolooceanInterface
 import rclpy
 from rclpy.node import Node
 
