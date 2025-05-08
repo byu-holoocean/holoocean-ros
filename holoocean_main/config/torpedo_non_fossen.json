@@ -5,6 +5,7 @@
     "main_agent": "auv0",
     "ticks_per_sec": 30,
     "frames_per_sec": 30,
+    "show_viewport": false,
     "agents": [
         {
         "agent_name": "auv0",
@@ -66,11 +67,10 @@
                 "ros_publish": true
             }
         ],
-        "fossen_model": "torpedo",
-        "control_mode": "depthHeadingAutopilot",
-        "control_scheme": 1,  
+        "control_scheme": 0,  
         "location": [0,0,-10],
         "rotation": [0,0,0]
+            
         }
     ]
 }

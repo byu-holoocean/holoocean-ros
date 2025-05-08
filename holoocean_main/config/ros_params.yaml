@@ -4,5 +4,6 @@ holoocean:
       draw_arrow: true
       show_viewport: true
       relative_path: true
-      scenario_path: 'config/scenario.json'
+      scenario_path: 'config/torpedo_non_fossen.json'
+      publish_commands: true
       

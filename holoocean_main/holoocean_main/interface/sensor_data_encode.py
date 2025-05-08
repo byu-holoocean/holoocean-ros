@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu, Image
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, UCommand
+from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
 import numpy as np
 
 # TODO make a not about how the Dynamics Sensor IMU is not in local frame
@@ -355,21 +355,12 @@ class CommandEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
 
-        self.message_type = UCommand
-        self.fin = [360.0] * 4
+        self.message_type = ControlCommand
 
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.fin = self.fin
-
-        #Control commands should be in a list with fins first and thruster last value in list (max 4 fins)
-        fin_count = len(sensor_data) - 1
-
-        for i in range(fin_count):
-            msg.fin[i] = float(sensor_data[i])
-        
-        msg.thruster = int(sensor_data[-1])
+        msg.cs = sensor_data.tolist()
 
         return msg
     

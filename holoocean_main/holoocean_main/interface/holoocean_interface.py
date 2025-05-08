@@ -13,7 +13,7 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, node=None):
+    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
@@ -22,12 +22,13 @@ class HolooceanInterface():
         self.fossen_agents = []
         self.sensors = []
         self.node = node
+        self.publish_commands = publish_commands
 
         # TODO error handling to make sure its a json format?
         scenario_path = Path(scenario_path)
         scenario = holoocean.packagemanager.load_scenario_file(scenario_path)
         # TODO update holoocean to acccepth the scenario file path
-        self.env = holoocean.make(scenario_cfg=scenario)
+        self.env = holoocean.make(scenario_cfg=scenario, show_viewport=show_viewport)
         self.state = self.env.tick()
         self.scenario = self.env._scenario
         
@@ -37,9 +38,16 @@ class HolooceanInterface():
         self.initialized = True
         self.create_sensor_list()
         self.create_publishers()
-        
 
-        
+        self.create_agent_command_buffer()
+                
+
+    def create_agent_command_buffer(self):
+        self.agent_commands = {}
+        for agent_name in self.env.agents:
+            agent = self.env.agents[agent_name] 
+            print(agent_name, agent.action_space._shape)
+            self.agent_commands[agent_name] = np.zeros(agent.action_space._shape, float)
 
     def initialize_fossen(self):
         # TODO this could be simplified but on the holoocean side
@@ -55,20 +63,18 @@ class HolooceanInterface():
         self.check_multi_agent()
         self.initialize_fossen()
 
-
     def create_sensor_list(self):
         scenario = self.scenario
 
         for agent in scenario["agents"]:
             #For each agent the control surface commands can be published 
-            #TODO: Handle Multi agent scenario here
-            # TODO move publish commands to the yaml ros params
-            if "publish_commands" in agent and agent["publish_commands"]==True:
+            agent_name = agent['agent_name']
+            if self.publish_commands and (agent_name in self.fossen_agents):
                 encoder_class = encoders.get("ControlCommand")
                 config = {}
                 config['sensor_name'] = "ControlCommand"
                 config['sensor_type'] = "ControlCommand"
-                config['agent_name'] = agent['agent_name']
+                config['agent_name'] = agent_name
                 config['state_name'] = 'ControlCommand'
                 self.sensors.append(encoder_class(config))
 
@@ -131,28 +137,37 @@ class HolooceanInterface():
         Return the state
         """
         
-        for agent in self.scenario.get("agents", []):
-            agent_name = agent["agent_name"]
-
-            # TODO work here for non fossen agents
-            command = np.zeros(6 ,float)
+        # for agent in self.scenario.get("agents", []):
+        # TODO this should work with spawned agents. Need to double check
+        for agent_name in self.env.agents:
+            agent = self.env.agents[agent_name]
 
             if agent_name in self.fossen_agents:
                 command = self.fossen.update(agent_name, self.state) #Calculate accelerations to be applied to HoloOcean agent
+            else:
+                # This is the case for the general agent without fossen Dynamics
+                command = self.agent_commands[agent_name]
 
             self.env.act(agent_name, command)
 
         self.state = self.env.tick() #To publish data to ros correctly, we should only tick the enviornment once each step
 
+
+        # Upadate the Control command for publishing for each fossen agent
+        # TODO figure out and document what order these come in
+        for agent in self.fossen_agents:
+            u_control = self.fossen.get_u_control(agent)
+
+            if self.multi_agent_scenario:
+                self.state[agent]["ControlCommand"] = np.array(u_control)
+            else:
+                self.state["ControlCommand"] = np.array(u_control)
+                
         self.publish_sensor_data()
 
+        time = self.state['t']
 
-        # TODO fix this and fix when its a publisher vs subscriber
-        # #TODO: Handle the multi agent case for the control commands here
-        # fins = np.rad2deg(self.torpedo_dynamics.u_actual[:-1])
-        # thruster = self.torpedo_dynamics.u_actual[-1]
-
-        # state["ControlCommand"] = np.append(fins,thruster)
+        return time
 
     
     def get_scenario(self):
@@ -194,28 +209,72 @@ class HolooceanInterface():
     def get_time_warp_period(self):
         return self.get_period() / self.get_time_warp()
 
+    def set_control_mode(self, vehicle_name, mode):
+        if not self.check_fossen_agent(vehicle_name, 'Set Control Mode'):
+            return
+        self.fossen.set_control_mode(vehicle_name, mode)
 
-    def set_u_command_callback(self, msg):
-        # TODO fix this and do error handling when i fix the ucommand message
-        vehicle = self.fossen.vehicles[msg.header.frame_id]
-        u_control = np.zeros(vehicle.dimU, np.float64)
-        for i in range(vehicle.dimU - 1):
-            u_control[i] = msg.fin[i]
-            # print(i, u_control[i])
-        
-        u_control = np.deg2rad(u_control)
-        
-        u_control[-1] = float(msg.thruster)
+    def check_fossen_agent(self, vehicle_name, command_info):
+        '''
+        Raises:
+        - KeyError: If the vehicle name is not found in the vehicle registry.
+        '''
+        # Check if the vehicle exists
+        if vehicle_name not in self.fossen_agents:
+            print(f"WARNING: Vehicle '{vehicle_name}' not found in the fossen vehicle registry. Cannot use command {command_info}")
+            return False
+        else:
+            return True
+    
+    def set_u_control(self, vehicle_name, u_control):
+        """
+        Set the u_command vector for a specific vehicle.
 
-        self.fossen.set_u_control_rad(self.main_agent, u_control)     
+        Parameters:
+        - vehicle_name (str): The name of the vehicle to control.
+        - u_control (list or array-like): The control input vector to set.
+
+        - ValueError: If the dimension of u_control does not match the vehicle's expected dimension.
+        """
+        if not self.check_fossen_agent(vehicle_name, 'Set U Control'):
+            return
+
+        vehicle = self.fossen.vehicles[vehicle_name]
+
+        # Check that the control vector matches the vehicle's expected input dimension
+        if len(u_control) != vehicle.dimU:
+            raise ValueError(
+                f"Control vector length {len(u_control)} does not match expected dimension {vehicle.dimU} for vehicle '{vehicle_name}'."
+            )
+
+        # Assign the control command
+        self.fossen.set_u_control(vehicle_name, u_control) 
+    
+    def set_agent_command(self, vehicle, command):
+        # TODO probably not the best way to do this but will work for now
+        self.agent_commands[vehicle] = command
+
+
+    def reset_enviornment(self, vehicle=None):
+        if vehicle is None:
+            self.state = self.env.reset()
 
     # TODO add error handling for frame_id and that agent has that type of goal
     def depth_callback(self, msg):
-        self.fossen.set_depth_goal(msg.header.frame_id, msg.data)
+        vehicle_name = msg.header.frame_id 
+        if not self.check_fossen_agent(vehicle_name, 'Set Depth'):
+            return
+        self.fossen.set_depth_goal(vehicle_name, msg.data)
 
     def heading_callback(self, msg):
-        self.fossen.set_heading_goal(msg.header.frame_id, msg.data)
+        vehicle_name = msg.header.frame_id 
+        if not self.check_fossen_agent(vehicle_name, 'Set Heading'):
+            return
+        self.fossen.set_heading_goal(vehicle_name, msg.data)
 
     def speed_callback(self, msg):
-        self.fossen.set_rpm_goal(msg.header.frame_id, int(msg.data))
+        vehicle_name = msg.header.frame_id 
+        if not self.check_fossen_agent(vehicle_name, 'Set Speed'):
+            return
+        self.fossen.set_rpm_goal(vehicle_name, int(msg.data))
 
