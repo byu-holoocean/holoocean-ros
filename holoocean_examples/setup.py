@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'agent_keyboard = holoocean_examples.agent_keyboard_command:main',
         ],
     },
 )
