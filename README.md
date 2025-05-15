@@ -12,16 +12,36 @@ After installing HoloOcean, you can clone this ROS package into your ROS workspa
 This HoloOcean ROS workspace is compatible with ROS 2 Humble. Follow the ROS 2 installation tutorials here:
 [ROS 2 Humble Installation](https://docs.ros.org/en/humble/Tutorials)
 
-### Running the Example Controller
+### Installation
 
-After building the package in your ROS workspace, you can run the example controller with the following commands:
+There is no pre-built package to install this, but you should only need to clone the repository into a ROS 2 workspace
+from your ROS2 workspace you can build and source your workspace with the following commands:
 
 ```bash
 source /opt/ros/humble/setup.bash
 colcon build
 source install/setup.bash
+```
 
-ros2 launch holoocean_main torpedo_launch.py
+### Prerequisites
+
+- ROS 2 workspace (tested on ROS 2 Humble Hawksbill): [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
+- HoloOcean installation:
+  - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
+  - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)
+ 
+#### Python Dependencies
+- numpy (numpy is installed with ROS Humble)
+- scipy
+
+
+### Running the Example Controller
+
+After building the package in your ROS workspace, you can run the example controller with the following commands:
+
+```bash
+
+ros2 launch holoocean_main holoocean_torpedo_launch.py
 ```
 
 Refer to the ROS 2 documentation to build nodes that can control the HoloOcean environment.
@@ -67,29 +87,9 @@ colcon build
 source install/setup.bash
 ```
 
-## Recording Your Data
-
-To record sensor data or commands with `ros2bag`, run a command like this from your `ros2_ws` folder:
-
-```bash
-source install/setup.bash
-ros2 bag record /holoocean/desiredHSD /holoocean/RotationSensor /holoocean/LocationSensor -o /path/to/save_data
-```
-
-For more information on recording and playing back ROS 2 bag data, see the [ROS 2 Bag Documentation](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Recording-And-Playing-Back-Data/Recording-And-Playing-Back-Data.html).
-
----
-
 ### About HoloOcean
 
 HoloOcean is a high-fidelity simulator developed by the Field Robotic Systems Lab (FRostLab) at Brigham Young University. Built upon Unreal Engine (by Epic Games) and Holodeck (developed by the BYU PCCL Lab), HoloOcean facilitates easy simulation of marine robotics and autonomy with a wide variety of sensors, agents, and features.
 
 This repository provides the ROS 2 packages necessary to connect HoloOcean to the ROS 2 network.
-
-### Prerequisites
-
-- ROS 2 workspace (tested on ROS 2 Humble Hawksbill): [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
-- HoloOcean installation:
-  - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
-  - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)
 
