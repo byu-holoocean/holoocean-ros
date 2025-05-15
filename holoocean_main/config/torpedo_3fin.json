@@ -1,0 +1,125 @@
+{
+    "name": "hovering_dynamics",
+    "package_name": "Ocean",
+    "world": "OpenWater",
+    "main_agent": "auv0",
+    "ticks_per_sec": 30,
+    "frames_per_sec": 30,
+    "agents": [
+        {
+        "agent_name": "auv0",
+        "agent_type": "CougUV",
+        "sensors": [
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": true
+
+            },
+            {
+                "sensor_type": "DVLSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "VelSigma": [0.1,0.1,0.1,0.1]
+                }
+            },
+            {
+                "sensor_type": "IMUSensor",
+                "ros_publish": true,
+                "socket": "COM",
+                "configuration":{
+                    "AccelSigma": [0.01,0.01,0.01],
+                    "AngVelSigma": [0.01,0.01,0.01],
+                    "ReturnBias": true
+                }
+            },
+            {
+                "sensor_type": "GPSSensor",
+                "ros_publish": true,
+                "tick_every": 30,
+                "configuration":{
+                    "Sigma": [0.001,0.001,0.001],
+                    "Depth": 0.5,
+                    "DepthSigma": 0.05
+                }
+            },
+            {
+                "sensor_type": "LocationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "DepthSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "Sigma": 0.005
+                }
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": true
+            }
+        ],
+        "fossen_model": "torpedo",
+        "control_mode": "depthHeadingAutopilot",
+        "control_scheme": 1,  
+        "location": [493.9, 244.5,-290.8],
+        "rotation": [0,0,35],
+        "dynamics": {
+                "mass": 31.03,
+                "length": 1.6,
+                "rho": 1026,
+                "diam": 0.19,
+                "r_bg": [0, 0, 0.02],
+                "r_bb": [0, 0, 0],
+                "r44": 0.3,
+                "Cd": 0.42,
+                "T_surge": 20,
+                "T_sway": 20,
+                "zeta_roll": 0.3,
+                "zeta_pitch": 0.8,
+                "T_yaw": 1,
+                "K_nomoto": 0.25
+            },
+        "actuator":{
+            "fin_count": 3,
+            "fin_offset_deg": 90.0,
+            "fin_area": 0.00665,
+            "deltaMax_fin_deg": 25,
+            "CL_delta": 0.9,
+            "T_delta": 0.1,
+            "T_n": 0.1,
+            "nMax": 1550
+        },
+        "autopilot": {
+            "depth": {
+                "wn_d_z": 0.05,
+                "Kp_z": 0.1,
+                "T_z": 100,
+                "Kp_theta": 39.8,
+                "Kd_theta": 17.1,
+                "Ki_theta": 0.5,
+                "K_w":  5.0,
+                "theta_max_deg": 15
+            },
+            "heading": {
+                "wn_d": 0.1,
+                "zeta_d": 1,
+                "r_max": 0.9,
+                "lam": 0.1,
+                "phi_b": 0.1,
+                "K_d": 0.5,
+                "K_sigma": 0.05
+            }
+        }
+        }
+    ]
+}
+
+
