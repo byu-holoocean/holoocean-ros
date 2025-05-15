@@ -32,7 +32,6 @@ source install/setup.bash
  
 #### Python Dependencies
 - numpy (numpy is installed with ROS Humble)
-- scipy
 
 
 ### Running the Example Controller
