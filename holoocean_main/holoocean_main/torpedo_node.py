@@ -1,6 +1,6 @@
 from holoocean_main.holoocean_interface import HolooceanInterface
-from holoocean.vehicle_dynamics import *
-from holoocean.dynamics import *
+from holoocean.fossen_dynamics.dynamics import *
+from holoocean.fossen_dynamics.torpedo import *
 
 import rclpy
 from rclpy.node import Node
@@ -61,7 +61,7 @@ class TorpedoNode(Node):
         #Create vehicle object attached to holoocean agent with dynamic parameters 
         #TODO: Change the vehicle that is being setup from the parameters
         self.vehicle = threeFinInd(self.interface.scenario, 'auv0','depthHeadingAutopilot')
-        self.torpedo_dynamics = FossenDynamics(self.vehicle, self.interface.get_period())  
+        self.torpedo_dynamics = FossenDynamics(self.vehicle)  
 
    
     def tick_callback(self):
@@ -71,10 +71,11 @@ class TorpedoNode(Node):
         self.accel = self.torpedo_dynamics.update(state) #Calculate accelerations to be applied to HoloOcean agent
 
         #TODO: Handle the multi agent case for the control commands here
-        fins = np.rad2deg(self.torpedo_dynamics.u_actual[:-1])
-        thruster = self.torpedo_dynamics.u_actual[-1]
+        # TODO: Fix this
+        # fins = np.rad2deg(self.torpedo_dynamics.u_actual[:-1])
+        # thruster = self.torpedo_dynamics.u_actual[-1]
 
-        state["ControlCommand"] = np.append(fins,thruster)
+        # state["ControlCommand"] = np.append(fins,thruster)
 
         if self.draw:
             self.draw_arrow(state)
