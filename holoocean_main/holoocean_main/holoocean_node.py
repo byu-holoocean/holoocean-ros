@@ -8,7 +8,7 @@ from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentComman
 from holoocean_interfaces.srv import SetControlMode
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
-from builtin_interfaces.msg import Time
+from rosgraph_msgs.msg import Clock
 
 
 package_name = 'holoocean_main'
@@ -42,9 +42,9 @@ class HoloOceanNode(Node):
             config_file = scenario_path
 
         ######## START HOLOOCEAN INTERFACE ###########
+        #TODO dont pass the node to the interface instead have the publishers created in the node with a function
         self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport)
         # TODO: Look into threading and callbacks for the HoloOcean simulator
-        # TODO: Probably just want to run it as fast as I can
         # TODO: Set the time warp in the ros params
         # TODO: See if that affects the visuals if it is not ticking and returning quickly
         self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
@@ -57,11 +57,12 @@ class HoloOceanNode(Node):
         self.ucommand_sub = self.create_subscription(ControlCommand, 'command/control', self.u_control_callback, 10)
         self.ucommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
 
+        # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.interface.depth_callback, 10)
         self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.interface.heading_callback, 10)
         self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.interface.speed_callback, 10)
 
-        self.clock_pub = self.create_publisher(Time, '/clock', 10)
+        self.clock_pub = self.create_publisher(Clock, '/clock', 10)
 
         # Services
         self.reset_srv = self.create_service(Trigger, 'reset', self.reset)
@@ -72,11 +73,10 @@ class HoloOceanNode(Node):
         #Tick the envionment and publish data as many times as requested
         time = self.interface.tick()
 
-
         # Publish the sim time
-        time_msg = Time()
-        time_msg.sec = int(time)
-        time_msg.nanosec = int((time - int(time)) * 1e9)
+        time_msg = Clock()
+        time_msg.clock.sec = int(time)
+        time_msg.clock.nanosec = int((time - int(time)) * 1e9)
 
         self.clock_pub.publish(time_msg)
         
