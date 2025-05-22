@@ -8,6 +8,15 @@ from rclpy.duration import Duration
 from std_msgs.msg import Float64
 import numpy as np
 
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
+
+# Define a QoS profile that allows late-joining subscribers to receive last message
+qos_profile_transient_local = QoSProfile(
+    depth=1,
+    reliability=QoSReliabilityPolicy.RELIABLE,
+    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL
+)
+
 
 class CommandExample(Node):
 
@@ -15,9 +24,9 @@ class CommandExample(Node):
         super().__init__('command_node')
 
         # TODO make these transient local qos for publishing
-        self.depth_publisher = self.create_publisher(DesiredCommand, 'depth', 10)
-        self.heading_publisher = self.create_publisher(DesiredCommand, 'heading', 10)
-        self.speed_publisher = self.create_publisher(DesiredCommand, 'speed', 10)
+        self.depth_publisher = self.create_publisher(DesiredCommand, 'depth', qos_profile_transient_local)
+        self.heading_publisher = self.create_publisher(DesiredCommand, 'heading', qos_profile_transient_local)
+        self.speed_publisher = self.create_publisher(DesiredCommand, 'speed', qos_profile_transient_local)
 
 
         self.declare_parameter('random', False)
@@ -29,9 +38,9 @@ class CommandExample(Node):
         self.sequence_index = 0
 
         self.deep_predefined_sequence = [
-            {'depth': 270.0, 'heading': 90.0, 'speed': 1200.0},
-            {'depth': 265.1, 'heading': 80.0, 'speed': 1200.0},
-            {'depth': 280.0, 'heading': 60.0, 'speed': 1200.0},
+            {'depth': 295.0, 'heading': 90.0, 'speed': 1200.0},
+            {'depth': 290.0, 'heading': 70.0, 'speed': 1200.0},
+            {'depth': 285.0, 'heading': 50.0, 'speed': 1200.0},
             # {'depth': 20.0, 'heading': 90.0, 'speed': 2.0},
             # {'depth': 12.0, 'heading': 90.0, 'speed': 2.0},
             # {'depth': 18.0, 'heading': 90.0, 'speed': 2.0},
@@ -54,12 +63,11 @@ class CommandExample(Node):
 
         # Immediately publish the first setpoint
         self.new_setpoint()
-        self.setpoint_interval = Duration(seconds=5.0)
+        self.setpoint_interval = Duration(seconds=150.0)
         self.last_publish_time = self.sim_clock.now()
         self.publish_interval = Duration(seconds=0.5)
 
         self.create_timer(0.1, self.timer_callback)
-        self.enabled = False
 
     def new_setpoint(self):
         if self.use_random:
@@ -88,13 +96,13 @@ class CommandExample(Node):
 
     def sequence_callback(self):
         sequence = self.deep_predefined_sequence if self.use_deep else self.predefined_sequence
-        if self.sequence_index < len(sequence):
-            self.depth = sequence[self.sequence_index]['depth']
-            self.heading = sequence[self.sequence_index]['heading']
-            self.speed = sequence[self.sequence_index]['speed']
-            self.sequence_index += 1
-        else:
+        if self.sequence_index > len(sequence):
             self.sequence_index = 0
+
+        self.depth = sequence[self.sequence_index]['depth']
+        self.heading = sequence[self.sequence_index]['heading']
+        self.speed = sequence[self.sequence_index]['speed']
+        self.sequence_index += 1
         self.get_logger().info(f'New Setpoint: {self.depth}, Heading: {self.heading}, Speed: {self.speed}')
 
     def randomize_callback(self):
