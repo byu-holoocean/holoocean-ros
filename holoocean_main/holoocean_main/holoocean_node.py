@@ -1,8 +1,18 @@
+import threading
 import rclpy
 from rclpy.node import Node
 from holoocean_main.interface.holoocean_interface import *
 from ament_index_python.packages import get_package_share_directory
 import os
+
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
+
+# Define a QoS profile that allows late-joining subscribers to receive last message
+qos_profile_transient_local = QoSProfile(
+    depth=1,
+    reliability=QoSReliabilityPolicy.RELIABLE,
+    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL
+)
 
 from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand
 from holoocean_interfaces.srv import SetControlMode
@@ -29,6 +39,9 @@ class HoloOceanNode(Node):
         publish_commands = self.get_parameter('publish_commands').get_parameter_value().bool_value
         self.declare_parameter('show_viewport', True)
         show_viewport = self.get_parameter('show_viewport').get_parameter_value().bool_value
+        # NOTE: Maybe move this to the ros message to draw the arrow or not
+        self.declare_parameter('draw_arrow', True)
+        draw_arrow = self.get_parameter('draw_arrow').get_parameter_value().bool_value
 
         self.declare_parameter('relative_path', True)
         relative_path = self.get_parameter('relative_path').get_parameter_value().bool_value
@@ -43,12 +56,12 @@ class HoloOceanNode(Node):
 
         ######## START HOLOOCEAN INTERFACE ###########
         #TODO dont pass the node to the interface instead have the publishers created in the node with a function
-        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport)
+        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow)
         # TODO: Look into threading and callbacks for the HoloOcean simulator
         # TODO: Set the time warp in the ros params
         # TODO: See if that affects the visuals if it is not ticking and returning quickly
-        self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
-        self.get_logger().info('Tick Started')
+        # self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
+        # self.get_logger().info('Tick Started')
 
         self.accel = np.array(np.zeros(6),float)
         
@@ -58,9 +71,9 @@ class HoloOceanNode(Node):
         self.ucommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
-        self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.interface.depth_callback, 10)
-        self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.interface.heading_callback, 10)
-        self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.interface.speed_callback, 10)
+        self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, qos_profile_transient_local)
+        self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.heading_callback, qos_profile_transient_local)
+        self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, qos_profile_transient_local)
 
         self.clock_pub = self.create_publisher(Clock, '/clock', 10)
 
@@ -68,6 +81,33 @@ class HoloOceanNode(Node):
         self.reset_srv = self.create_service(Trigger, 'reset', self.reset)
         self.control_mode_srv = self.create_service(SetControlMode, 'control_mode', self.control_mode_callback)
 
+
+        # Start the simulation ticking in a background thread
+        self._sim_running = True
+        self.tick_thread = threading.Thread(target=self.sim_loop, daemon=True)
+        self.tick_thread.start()
+
+        self.get_logger().info('HoloOcean simulation thread started.')
+
+
+
+    def sim_loop(self):
+        """Run the simulation step in a thread, using Unreal's internal timing."""
+        while self._sim_running:
+            sim_time = self.interface.tick()  # blocks until the sim step is done
+
+            # Publish simulation time
+            time_msg = Clock()
+            time_msg.clock.sec = int(sim_time)
+            time_msg.clock.nanosec = int((sim_time - int(sim_time)) * 1e9)
+            self.clock_pub.publish(time_msg)
+
+
+    def destroy_node(self):
+        """Override to cleanly shut down"""
+        self._sim_running = False
+        self.tick_thread.join()
+        super().destroy_node()
 
     def tick_callback(self):
         #Tick the envionment and publish data as many times as requested
@@ -117,24 +157,20 @@ class HoloOceanNode(Node):
         agent_command = np.array(msg.command)
         self.interface.set_agent_command(vehicle_name, agent_command)
 
-    def draw_arrow(self, state):
-        # For plotting HSD and arrows 
-        depth = self.vehicle.ref_z
-        heading = self.vehicle.ref_psi
+    
+    def depth_callback(self, msg):
+        vehicle_name = msg.header.frame_id 
+        self.interface.set_depth(vehicle_name, msg.data)
+    
+    def heading_callback(self, msg):
+        vehicle_name = msg.header.frame_id 
+        self.interface.set_heading(vehicle_name, msg.data)
 
-        pos = state['DynamicsSensor'][6:9]  # [x, y, z]
-        x_end = pos[0] + 3 * np.cos(np.deg2rad(heading))
-        y_end = pos[1] - 3 * np.sin(np.deg2rad(heading))
+    def speed_callback(self, msg):
+        vehicle_name = msg.header.frame_id 
+        self.interface.set_speed(vehicle_name, msg.data)
 
-        #change color if within 2 meters
-        if abs(depth + pos[2]) <= 2.0:
-            color = [0,255,0]
-        else:
-            color = [255,0,0]
-
-        self.interface.env.draw_arrow(pos.tolist(), end=[x_end, y_end, pos[2]], color=[0,0,255], thickness=5, lifetime=self.interface.get_period()+0.01)
-        self.interface.env.draw_arrow(pos.tolist(), end=[pos[0], pos[1], -depth], color=color, thickness=5, lifetime=self.interface.get_period()+0.01)
-
+    
 def main(args=None):
     rclpy.init(args=args)
     node = HoloOceanNode()

@@ -6,6 +6,7 @@ from holoocean_main.interface.sensor_data_encode import encoders, multi_publishe
 from holoocean.fossen_interface import FossenInterface, get_vehicle_model
 
 #TODO: Maybe add sensor data encode to this file
+# TODO remove the time warp stuff in the interface 
 
 class HolooceanInterface():
     '''
@@ -13,7 +14,7 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True):
+    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
@@ -23,12 +24,14 @@ class HolooceanInterface():
         self.sensors = []
         self.node = node
         self.publish_commands = publish_commands
+        self.arrow_flag = arrow_flag
 
         # TODO error handling to make sure its a json format?
         scenario_path = Path(scenario_path)
         scenario = holoocean.packagemanager.load_scenario_file(scenario_path)
         # TODO update holoocean to acccepth the scenario file path
         self.env = holoocean.make(scenario_cfg=scenario, show_viewport=show_viewport)
+        self.env.set_render_quality(0)
         self.state = self.env.tick()
         self.scenario = self.env._scenario
         
@@ -58,6 +61,12 @@ class HolooceanInterface():
 
     def check_multi_agent(self):
         self.multi_agent_scenario = len(self.scenario.get("agents", [])) > 1
+
+    def get_agent_state(self, agent_name):
+        if self.multi_agent_scenario:
+            return self.state[agent_name]
+        else:
+            return self.state
 
     def parse_scenario(self):
         self.check_multi_agent()
@@ -111,21 +120,17 @@ class HolooceanInterface():
         state = self.state.copy()
         for sensor in self.sensors:
             try:
-                if self.multi_agent_scenario:
-                    msg = sensor.encode(state[sensor.agent_name][sensor.state_name])
-
-                else:
-                    msg = sensor.encode(state[sensor.state_name])
+                agent_state = self.get_agent_state(sensor.agent_name)
+                msg = sensor.encode(agent_state[sensor.state_name])
 
                 # Header
-                # TODO publish sim time on clock 
                 msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
                 msg.header.stamp.nanosec = int((state['t'] - msg.header.stamp.sec) * 1e9)
 
                 sensor.publisher.publish(msg)
             except KeyError:
                 # Handle the case where sensor data is not available
-                # self.get_logger().info(f"No data for sensor: {sensor['sensor_name']}")
+                # This is a common case where sensor data rates are configured to not be every tick
                 pass
             except Exception as e:
                 # Handle other exceptions
@@ -150,6 +155,10 @@ class HolooceanInterface():
 
             self.env.act(agent_name, command)
 
+            # Draw the autopilot arrows
+            self.draw_arrow(agent_name)
+            
+
         self.state = self.env.tick() #To publish data to ros correctly, we should only tick the enviornment once each step
 
 
@@ -169,7 +178,7 @@ class HolooceanInterface():
 
         return time
 
-    
+    # TODO should be able to get rid of the if statement here since the enviornment should be initialized always with time figured out
     def get_scenario(self):
         if self.initialized:
             return self.env._scenario
@@ -260,21 +269,53 @@ class HolooceanInterface():
             self.state = self.env.reset()
 
     # TODO add error handling for frame_id and that agent has that type of goal
-    def depth_callback(self, msg):
-        vehicle_name = msg.header.frame_id 
+    def set_depth(self, vehicle_name, depth):
         if not self.check_fossen_agent(vehicle_name, 'Set Depth'):
             return
-        self.fossen.set_depth_goal(vehicle_name, msg.data)
+        self.fossen.set_depth_goal(vehicle_name, depth)
 
-    def heading_callback(self, msg):
-        vehicle_name = msg.header.frame_id 
+    def set_heading(self, vehicle_name, heading):
         if not self.check_fossen_agent(vehicle_name, 'Set Heading'):
             return
-        self.fossen.set_heading_goal(vehicle_name, msg.data)
+        self.fossen.set_heading_goal(vehicle_name, heading)
 
-    def speed_callback(self, msg):
-        vehicle_name = msg.header.frame_id 
+    def set_speed(self, vehicle_name, speed):
         if not self.check_fossen_agent(vehicle_name, 'Set Speed'):
             return
-        self.fossen.set_rpm_goal(vehicle_name, int(msg.data))
+        self.fossen.set_rpm_goal(vehicle_name, int(speed))
+
+    
+    def draw_arrow(self, agent_name):
+        if self.arrow_flag == False:
+            return
+        
+        agent_state = self.get_agent_state(agent_name)
+
+        # TODO try execpt on if there is no dynamics sensor
+        pos = agent_state['DynamicsSensor'][6:9]  # [x, y, z]
+
+        ### DEPTH ARROW ###
+        # TODO check if the depth autopilot is used.
+        # For plotting HSD and arrows 
+        depth = self.fossen.vehicles[agent_name].ref_z
+
+        #change color if within 2 meters
+        if abs(depth + pos[2]) <= 2.0:
+            color = [0,255,0]
+        else:
+            color = [255,0,0]
+
+        self.env.draw_arrow(pos.tolist(), end=[pos[0], pos[1], -depth], color=color, thickness=5, lifetime=self.get_period()+0.01)
+        
+        
+        ### HEADING ARROW ###
+        # TODO check if heading autopilot is used 
+        # TODO change the color of the heading arrow if within tolerance
+
+        heading = self.fossen.vehicles[agent_name].ref_psi
+        heading_rad = np.deg2rad(heading)
+
+        x_end = pos[0] + 3 * np.cos(heading_rad)
+        y_end = pos[1] - 3 * np.sin(heading_rad)
+        self.env.draw_arrow(pos.tolist(), end=[x_end, y_end, pos[2]], color=[0,0,255], thickness=5, lifetime=self.get_period()+0.01)
 
