@@ -96,7 +96,7 @@ class CommandExample(Node):
 
     def sequence_callback(self):
         sequence = self.deep_predefined_sequence if self.use_deep else self.predefined_sequence
-        if self.sequence_index > len(sequence):
+        if self.sequence_index >= len(sequence):
             self.sequence_index = 0
 
         self.depth = sequence[self.sequence_index]['depth']
