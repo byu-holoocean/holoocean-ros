@@ -1,0 +1,18 @@
+services:
+  my_service:
+    image: frostlab/holoros:full
+    build: .
+    container_name: holoocean
+    user: ue4
+    runtime: nvidia
+    environment:
+      - DISPLAY=$DISPLAY
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # - /path/to/ros2_ws:/home/ue4/ros2_ws
+      # - /path/to/HoloOcean:/home/ue4/holoocean
+      # NOTE: Uncomment this to share binaries with local machine
+      # - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean 
+    tty: true
+    privileged: true
+    network_mode: host

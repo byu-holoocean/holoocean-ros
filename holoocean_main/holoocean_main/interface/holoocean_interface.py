@@ -268,6 +268,10 @@ class HolooceanInterface():
         if vehicle is None:
             self.state = self.env.reset()
 
+        # TODO temporary render qualtiy to Low for faster rendering
+        # TODO: render quality to ROS params file
+        self.env.set_render_quality(0)
+
     # TODO add error handling for frame_id and that agent has that type of goal
     def set_depth(self, vehicle_name, depth):
         if not self.check_fossen_agent(vehicle_name, 'Set Depth'):
