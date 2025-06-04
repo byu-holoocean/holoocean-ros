@@ -14,7 +14,7 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True):
+    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True, render_quality=None):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
@@ -31,9 +31,10 @@ class HolooceanInterface():
         scenario = holoocean.packagemanager.load_scenario_file(scenario_path)
         # TODO update holoocean to acccepth the scenario file path
         self.env = holoocean.make(scenario_cfg=scenario, show_viewport=show_viewport)
-        self.env.set_render_quality(0)
         self.state = self.env.tick()
         self.scenario = self.env._scenario
+        self.render_quality = render_quality
+        self.set_render_quality()
         
         self.parse_scenario()
         
@@ -43,7 +44,14 @@ class HolooceanInterface():
         self.create_publishers()
 
         self.create_agent_command_buffer()
-                
+
+          
+    def set_render_quality(self, value=None):
+        if value is not None:
+            self.render_quality = value
+
+        if self.render_quality is not None:
+            self.env.set_render_quality(self.render_quality)
 
     def create_agent_command_buffer(self):
         self.agent_commands = {}
@@ -268,9 +276,7 @@ class HolooceanInterface():
         if vehicle is None:
             self.state = self.env.reset()
 
-        # TODO temporary render qualtiy to Low for faster rendering
-        # TODO: render quality to ROS params file
-        self.env.set_render_quality(0)
+        self.set_render_quality()
 
     # TODO add error handling for frame_id and that agent has that type of goal
     def set_depth(self, vehicle_name, depth):
