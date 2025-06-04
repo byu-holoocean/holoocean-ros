@@ -5,15 +5,6 @@ from holoocean_main.interface.holoocean_interface import *
 from ament_index_python.packages import get_package_share_directory
 import os
 
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
-
-# Define a QoS profile that allows late-joining subscribers to receive last message
-qos_profile_transient_local = QoSProfile(
-    depth=1,
-    reliability=QoSReliabilityPolicy.RELIABLE,
-    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL
-)
-
 from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand
 from holoocean_interfaces.srv import SetControlMode
 from std_msgs.msg import Float64
@@ -42,6 +33,8 @@ class HoloOceanNode(Node):
         # NOTE: Maybe move this to the ros message to draw the arrow or not
         self.declare_parameter('draw_arrow', True)
         draw_arrow = self.get_parameter('draw_arrow').get_parameter_value().bool_value
+        self.declare_parameter('render_quality', 1)
+        render_quality = self.get_parameter('render_quality').get_parameter_value().integer_value
 
         self.declare_parameter('relative_path', True)
         relative_path = self.get_parameter('relative_path').get_parameter_value().bool_value
@@ -56,7 +49,7 @@ class HoloOceanNode(Node):
 
         ######## START HOLOOCEAN INTERFACE ###########
         #TODO dont pass the node to the interface instead have the publishers created in the node with a function
-        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow)
+        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow, render_quality=render_quality)
         # TODO: Look into threading and callbacks for the HoloOcean simulator
         # TODO: Set the time warp in the ros params
         # TODO: See if that affects the visuals if it is not ticking and returning quickly
@@ -71,9 +64,9 @@ class HoloOceanNode(Node):
         self.ucommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
-        self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, qos_profile_transient_local)
-        self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.heading_callback, qos_profile_transient_local)
-        self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, qos_profile_transient_local)
+        self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
+        self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.heading_callback, 10)
+        self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, 10)
 
         self.clock_pub = self.create_publisher(Clock, '/clock', 10)
 

@@ -1,33 +1,18 @@
 from holoocean_interfaces.msg import DesiredCommand
 import rclpy
 from rclpy.node import Node
-from rclpy.clock import ClockType
-from rclpy.time import Time
 from rclpy.duration import Duration
 
-from std_msgs.msg import Float64
 import numpy as np
-
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
-
-# Define a QoS profile that allows late-joining subscribers to receive last message
-qos_profile_transient_local = QoSProfile(
-    depth=1,
-    reliability=QoSReliabilityPolicy.RELIABLE,
-    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL
-)
-
 
 class CommandExample(Node):
 
     def __init__(self):
         super().__init__('command_node')
 
-        # TODO make these transient local qos for publishing
-        self.depth_publisher = self.create_publisher(DesiredCommand, 'depth', qos_profile_transient_local)
-        self.heading_publisher = self.create_publisher(DesiredCommand, 'heading', qos_profile_transient_local)
-        self.speed_publisher = self.create_publisher(DesiredCommand, 'speed', qos_profile_transient_local)
-
+        self.depth_publisher = self.create_publisher(DesiredCommand, 'depth', 10)
+        self.heading_publisher = self.create_publisher(DesiredCommand, 'heading', 10)
+        self.speed_publisher = self.create_publisher(DesiredCommand, 'speed', 10)
 
         self.declare_parameter('random', False)
         self.declare_parameter('deep', False)
@@ -53,9 +38,9 @@ class CommandExample(Node):
         ]
 
         self.predefined_sequence = [
-            {'depth': 2.0, 'heading': 90.0, 'speed': 2.0},
-            {'depth': 0.1, 'heading': 90.0, 'speed': 2.0},
-            {'depth': 5.0, 'heading': 90.0, 'speed': 2.0},
+            {'depth': 2.0, 'heading': 90.0, 'speed': 1200.0},
+            {'depth': 0.1, 'heading': 90.0, 'speed': 1200.0},
+            {'depth': 5.0, 'heading': 90.0, 'speed': 1200.0},
         ]
 
         # Simulated clock-based timing using ROS time

@@ -3,4 +3,4 @@ holoocean:
     ros__parameters:
       use_sim_time: true
       random: false
-      deep: true
+      deep: false
