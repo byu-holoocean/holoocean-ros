@@ -17,17 +17,6 @@ RUN apt update && apt install -y --no-install-recommends \
 
 ENV LANG=en_US.UTF-8
 
-# # Install Python packages (before ROS to avoid conflicts)
-# RUN pip3 install --no-cache-dir \
-#     setuptools \
-#     wheel \
-#     tox \
-#     posix_ipc \
-#     numpy \
-#     scipy \
-#     matplotlib
-
-
 # Add ROS 2 Humble repository
 RUN add-apt-repository universe && \
     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
@@ -43,12 +32,8 @@ RUN apt update && apt install -y --no-install-recommends \
 # Source ROS setup for all users via bashrc
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/ue4/.bashrc
 
-# RUN apt update && apt install -y --no-install-recommends \
-#     sudo && \
-#     apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
-
-# Add user 'ue4' to sudoers with no password
+# Add user 'ue4' to sudoers with no password so we can change the owner of holoocean_client folder 
+# for pip installlation
 RUN usermod -aG sudo ue4 && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 

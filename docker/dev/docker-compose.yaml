@@ -12,11 +12,10 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DISPLAY=${DISPLAY}
     volumes:
-      - ~/Holoocean/HoloOcean/client:/home/ue4/holoocean_client  # Mount the client directory
+      - ~/path/to/HoloOcean/client:/home/ue4/holoocean_client  # Mount the client directory
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
       - ../..:/home/ue4/ros2_ws/src/
       - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME/.Xauthority:/root/.Xauthority:rw
-    
     entrypoint: /home/ue4/entrypoint.sh
