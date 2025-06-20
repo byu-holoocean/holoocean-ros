@@ -3,7 +3,7 @@ import holoocean
 
 from pathlib import Path
 from holoocean_main.interface.sensor_data_encode import encoders, multi_publisher_sensors
-from holoocean.fossen_interface import FossenInterface, get_vehicle_model
+from holoocean.fossen_dynamics.fossen_interface import FossenInterface, get_vehicle_model
 
 #TODO: Maybe add sensor data encode to this file
 # TODO remove the time warp stuff in the interface 
