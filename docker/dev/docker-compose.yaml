@@ -1,0 +1,22 @@
+services:
+  holoocean:
+    image: frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4-ros
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: holoocean
+    runtime: nvidia
+    user: ue4
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - ~/Holoocean/HoloOcean/client:/home/ue4/holoocean_client  # Mount the client directory
+      - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
+      - ../..:/home/ue4/ros2_ws/src/
+      - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - $HOME/.Xauthority:/root/.Xauthority:rw
+    
+    entrypoint: /home/ue4/entrypoint.sh
