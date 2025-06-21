@@ -38,8 +38,6 @@ class HolooceanInterface():
         
         self.parse_scenario()
         
-        # TODO fix initialized
-        self.initialized = True
         self.create_sensor_list()
         self.create_publishers()
 
@@ -188,13 +186,10 @@ class HolooceanInterface():
 
     # TODO should be able to get rid of the if statement here since the enviornment should be initialized always with time figured out
     def get_scenario(self):
-        if self.initialized:
-            return self.env._scenario
-        else:
-            return self.scenario
+        return self.env._scenario
     
     def get_tick_rate(self):
-        if self.initialized:
+        if self.env._ticks_per_sec is not None:
             return self.env._ticks_per_sec
         else:
             if "ticks_per_sec" in self.scenario:
@@ -202,29 +197,8 @@ class HolooceanInterface():
             else:
                 ValueError('ticks_per_sec not specified in scenario')
     
-    def get_frame_rate(self):
-        if self.initialized:
-            return self.env._frames_per_sec
-        else:
-            if "frames_per_sec" in self.scenario:
-                return self.scenario['frames_per_sec']
-            else:
-                ValueError('frames_per_sec not specified in scenario')
-    
     def get_period(self):
         return 1.0/self.get_tick_rate()
-    
-    def get_time_warp(self):
-        #Check to make sure this is correct
-        time_warp = self.get_frame_rate() / self.get_tick_rate()
-
-        if time_warp <= 0:
-            ValueError("frames_per_sec cannot be 0 for time warping. Set a value > 0 ")
-
-        return time_warp
-
-    def get_time_warp_period(self):
-        return self.get_period() / self.get_time_warp()
 
     def set_control_mode(self, vehicle_name, mode):
         if not self.check_fossen_agent(vehicle_name, 'Set Control Mode'):
