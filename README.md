@@ -9,9 +9,10 @@ This repository provides ROS 2 integration for [HoloOcean](https://github.com/by
 After installing HoloOcean, clone this repository into your ROS 2 workspace:
 
 ```bash
-cd ~/ros2_ws/src
+cd ros2_ws/src
 git clone https://github.com/byu-holoocean/holoocean-ros.git
 cd ..
+source /opt/ros/humble/setup.bash
 colcon build
 source install/setup.bash
 ```
@@ -25,10 +26,6 @@ source install/setup.bash
 ## Launching the Simulation
 
 To run the node:
-
-```bash
-source /opt/ros/humble/setup.bash
-source install/setup.bash
 
 ros2 launch holoocean_main holoocean_launch.py
 ```
