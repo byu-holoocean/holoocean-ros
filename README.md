@@ -27,10 +27,9 @@ source install/setup.bash
 
 To run the node:
 
+```
 ros2 launch holoocean_main holoocean_launch.py
 ```
-
----
 
 ## Node Overview
 
