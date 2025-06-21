@@ -113,7 +113,7 @@ fi
 echo "🐳 Building Docker image..."
 docker compose build
 
-# Ask if user wants to clean up
+# TODO Ask if user wants to clean up
 echo "🧹 Cleaning up temporary files..."
 rm -rf tmp/
 
