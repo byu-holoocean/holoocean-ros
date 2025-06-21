@@ -8,13 +8,12 @@ USER root
 # Copy the client folder from the repository. 
 # This assumes the build context is set to root of the holoocean-ros package
 COPY ./docker/runtime/tmp/HoloOcean/client /tmp/holoocean_client
-RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --upgrade pip && \
-    /opt/venv/bin/pip install /tmp/holoocean_client
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install /tmp/holoocean_client
 
-COPY holoocean_examples ros2_ws/src/
-COPY holoocean_interfaces ros2_ws/src/
-COPY holoocean_main ros2_ws/src/
+COPY ./holoocean_examples ros2_ws/src/holoocean_examples
+COPY ./holoocean_interfaces ros2_ws/src/holoocean_interfaces
+COPY ./holoocean_main ros2_ws/src/holoocean_main
 
 WORKDIR /home/ue4/ros2_ws
 RUN bash -c "source /opt/ros/humble/setup.bash && colcon build"
@@ -40,14 +39,6 @@ RUN apt-get update && apt-get install -y \
 # Create non-root user 'ue4' with UID 1000
 RUN useradd -m -u 1000 ue4
 
-# Copy the virtual environment from the builder
-COPY --from=builder /opt/venv /opt/venv
-
-# Permissions fix for holoocean package content
-RUN chown -R ue4:ue4 /opt/venv || true
-
-
-
 # ROS2 Installation
 RUN locale-gen en_US en_US.UTF-8 && \
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
@@ -66,16 +57,21 @@ RUN apt update && apt install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 USER ue4
+# Copy the python installation from the builder
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+
+# Install the worlds
+# RUN python3 -c 'import holoocean; holoocean.install("TestWorlds")'
+RUN python3 -c 'import holoocean; holoocean.install("Ocean")'
+
 # Source ROS setup for all users via bashrc
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/ue4/.bashrc
 
 COPY --from=builder /home/ue4/ros2_ws /home/ue4/ros2_ws
 RUN echo "source /home/ue4/ros2_ws/install/setup.bash" >> /home/ue4/.bashrc
 
-WORKDIR /home/ue4
+# Permissions fix for holoocean package content
+RUN chown -R ue4:ue4 /usr/local/python3.10 || true
 
-# Install the worlds
-# RUN /opt/venv/bin/python3 -c 'import holoocean; holoocean.install("TestWorlds")'
-RUN /opt/venv/bin/python3 -c 'import holoocean; holoocean.install("Ocean")'
-
+WORKDIR /home/ue4/ros2_ws
 CMD ["/bin/bash"]
