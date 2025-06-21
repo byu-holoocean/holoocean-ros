@@ -13,6 +13,6 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      # TODO volume in the config folder for simple switching
+      - ../../config:/home/ue4/config  # Mount the config directory
     network_mode: host  # Connect to host network for ROS interfaces outside of the container
     command: ["tail", "-f", "/dev/null"]  # Keep the container running

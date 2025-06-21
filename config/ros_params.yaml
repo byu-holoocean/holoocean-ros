@@ -3,8 +3,8 @@ holoocean:
     ros__parameters:
       draw_arrow: true
       show_viewport: true
-      relative_path: true
-      scenario_path: 'config/torpedo_fossen.json'
+      relative_path: false
+      scenario_path: '/home/ue4/config/torpedo_fossen.json'  # Path in the container
       publish_commands: true
       render_quality: 0
       
