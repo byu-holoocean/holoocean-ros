@@ -76,6 +76,14 @@ The following parameters can be set for `holoocean_node` using a launch file or 
 
 ---
 
+## Docker 
+
+See the docker folder for running holoocean with ros in a docker container.
+Runtime and development containers available. 
+
+---
+
+
 ## 📦 Recording Sensor Data
 
 Use `ros2 bag` to record topics:
