@@ -25,25 +25,25 @@ HoloOcean Setup
 2. **Clone the Source Code**  
    Clone the HoloOcean source code from GitHub:
    ```
-   git clone https://github.com/byu-holoocean/HoloOcean
+   git clone git@github.com:byu-holoocean/HoloOcean.git
    ```
 
 3. **Install ROS 2 Packages**  
    Install the ROS 2 packages for HoloOcean into your ROS 2 workspace:
    ```
-   git clone https://github.com/byu-holoocean/holoocean-ros.git ~/ros2_ws/src
+   git clone git@github.com:byu-holoocean/holoocean-ros.git
    ```
 
 4. **Adjust File Paths**  
-   Update the file paths in the `docker-compose` file to point to the cloned HoloOcean repository and the ROS 2 workspace.
+   Update the file paths in the `docker-compose` file to point to the cloned HoloOcean repository and the holoocean-ros package.
 
 5. **Run Setup Commands**  
    Enter the following commands to configure the container and access the HoloOcean environment:
 
    ```bash
    xhost +                             # Grant container access to the screen
+   docker compose up -d                # Create a container and setup based on the holoocean ros image
    docker exec -it holoocean bash      # Enter the container
-   pip install holoocean/client        # Install HoloOcean client
    ```
 
 6. **Verify GPU Access**  
@@ -82,17 +82,18 @@ To enter the `ros2_ws` workspace and build it within the container:
 Launching HoloOcean Nodes
 -------------------------
 
-To launch the torpedo node, state estimation, and command nodes:
+To launch the main holoocean node:
 
 ```bash
-ros2 launch holoocean_main holoocean_torpedo_launch.py
+ros2 launch holoocean_main holoocean_launch.py
 ```
 
-Docker Setup
-------------
+Troubleshooting
+---------------
 
 Make sure you have the following components configured:
 
 - NVIDIA Container Toolkit
 - NVIDIA driver
 - Run `xhost +` to grant display access to the container.
+- DISPLAY enviornment variable set properly
