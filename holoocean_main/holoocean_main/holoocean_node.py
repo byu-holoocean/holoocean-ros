@@ -33,8 +33,11 @@ class HoloOceanNode(Node):
         # NOTE: Maybe move this to the ros message to draw the arrow or not
         self.declare_parameter('draw_arrow', True)
         draw_arrow = self.get_parameter('draw_arrow').get_parameter_value().bool_value
-        self.declare_parameter('render_quality', 1)
+        self.declare_parameter('render_quality', -1)
         render_quality = self.get_parameter('render_quality').get_parameter_value().integer_value
+        # Set Render quality to None because of bug with frames per sec set to false when render quality is set
+        if render_quality == -1:
+            render_quality = None 
 
         self.declare_parameter('relative_path', True)
         relative_path = self.get_parameter('relative_path').get_parameter_value().bool_value
@@ -50,11 +53,6 @@ class HoloOceanNode(Node):
         ######## START HOLOOCEAN INTERFACE ###########
         #TODO dont pass the node to the interface instead have the publishers created in the node with a function
         self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow, render_quality=render_quality)
-        # TODO: Look into threading and callbacks for the HoloOcean simulator
-        # TODO: Set the time warp in the ros params
-        # TODO: See if that affects the visuals if it is not ticking and returning quickly
-        # self.timer = self.create_timer(self.interface.get_time_warp_period(), self.tick_callback)
-        # self.get_logger().info('Tick Started')
 
         self.accel = np.array(np.zeros(6),float)
         
@@ -103,7 +101,7 @@ class HoloOceanNode(Node):
         super().destroy_node()
 
     def tick_callback(self):
-        #Tick the envionment and publish data as many times as requested
+        #Tick the envionment and publish data
         time = self.interface.tick()
 
         # Publish the sim time
