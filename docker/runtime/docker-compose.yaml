@@ -1,0 +1,18 @@
+services:
+  my_service:
+    image: frostlab/holoocean:2.0-runtime-ubuntu22.04-cuda12.4-ros
+    build: 
+      context: ../..
+      dockerfile: docker/runtime/Dockerfile
+    container_name: holoocean
+    user: ue4
+    runtime: nvidia
+    environment:
+      - DISPLAY=$DISPLAY
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # TODO volume in the config folder for simple switching
+    network_mode: host  # Connect to host network for ROS interfaces outside of the container
+    command: ["tail", "-f", "/dev/null"]  # Keep the container running

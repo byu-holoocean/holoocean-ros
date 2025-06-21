@@ -1,7 +1,7 @@
 holoocean:
   holoocean_node:
     ros__parameters:
-      draw_arrow: false
+      draw_arrow: true
       show_viewport: true
       relative_path: true
       scenario_path: 'config/torpedo_fossen.json'

@@ -9,3 +9,6 @@ log/
 !*.json
 *.tar
 *.zip
+
+# Temp folder for docker build
+docker/tmp

@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'holoocean_main'
+package_name = 'holoocean_examples'
 
 setup(
     name=package_name,
@@ -13,19 +13,18 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share',package_name,'launch'),glob(os.path.join('launch','*launch.[pxy][yma]*'))),   
-        (os.path.join('share',package_name,'config'),glob('config/*.json')),  
-        (os.path.join('share',package_name,'config'),glob('config/*.yaml')),  
+        (os.path.join('share',package_name,'config'),glob('config/*.yaml')), 
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='bradenmeyers',
-    maintainer_email='bjm255@byu.edu',
-    description='Ros Interface for Holoocean Marine Simulator',
-    license='MIT',
+    maintainer='bjm255',
+    maintainer_email='bjz-github@spwiz.com',
+    description='TODO: Package description',
+    license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'holoocean_node = holoocean_main.holoocean_node:main',
+            'command_node = holoocean_examples.command_node:main',
         ],
     },
 )

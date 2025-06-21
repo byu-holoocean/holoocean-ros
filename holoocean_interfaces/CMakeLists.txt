@@ -12,6 +12,7 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -33,8 +34,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DepthSensor.msg"
   "msg/RGBCamera.msg"
   "msg/RangeFinderSensor.msg"
-  "msg/UCommand.msg"
-  DEPENDENCIES std_msgs
+  "msg/ControlCommand.msg"
+  "msg/DesiredCommand.msg"
+  "msg/AgentCommand.msg"
+  "srv/SetControlMode.srv"
+  DEPENDENCIES std_msgs std_srvs
 )
 
 ament_package()
