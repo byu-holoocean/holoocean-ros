@@ -4,7 +4,5 @@ holoocean:
       draw_arrow: false
       show_viewport: true
       relative_path: true
-      scenario_path: 'config/torpedo_fossen.json'
-      publish_commands: true
+      scenario_path: 'config/blueROV.json'
       # render_quality: 0
-      

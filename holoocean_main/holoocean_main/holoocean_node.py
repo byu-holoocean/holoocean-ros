@@ -43,6 +43,8 @@ class HoloOceanNode(Node):
         relative_path = self.get_parameter('relative_path').get_parameter_value().bool_value
         self.declare_parameter('scenario_path', '')
         scenario_path = self.get_parameter('scenario_path').get_parameter_value().string_value
+        if scenario_path == '':
+            raise ValueError("The 'scenario_path' parameter cannot be blank.")
         if relative_path:
             package_dir = Path(get_package_share_directory('holoocean_main'))
             config_file = os.path.join(package_dir, scenario_path)

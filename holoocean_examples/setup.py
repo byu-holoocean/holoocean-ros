@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'command_node = holoocean_examples.command_node:main',
+            'joy_holoocean = holoocean_examples.joy_holoocean:main',
         ],
     },
 )
