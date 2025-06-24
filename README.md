@@ -4,6 +4,13 @@ This repository provides ROS 2 integration for [HoloOcean](https://github.com/by
 
 > ✅ **Tested with ROS 2 Humble Hawksbill**
 
+### Prerequisites
+
+- ROS 2 workspace (tested on ROS 2 Humble Hawksbill): [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
+- HoloOcean installation:
+  - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
+  - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)
+
 ## Installation
 
 After installing HoloOcean, clone this repository into your ROS 2 workspace:
