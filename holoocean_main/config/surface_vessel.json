@@ -1,5 +1,5 @@
 {
-    "name": "BlueROV",
+    "name": "SurfaceVessel",
     "package_name": "Ocean",
     "world": "PierHarbor",
     "main_agent": "auv0",
@@ -8,7 +8,7 @@
     "agents": [
         {
         "agent_name": "auv0",
-        "agent_type": "BlueROV2",
+        "agent_type": "SurfaceVessel",
         "sensors": [
             {
                 "sensor_type": "DynamicsSensor",
@@ -59,7 +59,7 @@
             }
         ],
         "control_scheme": 0,  
-        "location": [0,-700,-3],
+        "location": [0,-500,0],
         "rotation": [0,0,0]
         }
     ]

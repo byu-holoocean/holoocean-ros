@@ -1,8 +1,0 @@
-holoocean:
-  holoocean_node:
-    ros__parameters:
-      draw_arrow: false
-      show_viewport: true
-      relative_path: true
-      scenario_path: 'config/blueROV.json'
-      # render_quality: 0

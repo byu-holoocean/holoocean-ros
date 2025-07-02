@@ -2,6 +2,19 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
 from holoocean_interfaces.msg import AgentCommand, SensorCommand
+from enum import Enum
+
+
+class AgentType(Enum):
+    BLUEROV = 1
+    SURFACE_VESSEL = 2
+
+
+agent_keys = {
+    'bluerov': AgentType.BLUEROV,
+    'surface_vessel': AgentType.SURFACE_VESSEL
+}
+
 
 class JoyToAgentCommand(Node):
     def __init__(self):
@@ -15,30 +28,47 @@ class JoyToAgentCommand(Node):
             self.joy_callback,
             10)
 
-        # Use these button indices as needed
-        self.arm_button_index = 11  # e.g., A button
-        self.disarm_button_index = 10  # e.g., B button
+        ## JOYSTICK PARAMS ##
+        self.arm_button_index = 11
+        self.disarm_button_index = 10
 
-        self.vertical_axis_index = 3   # Right Joystick Vertical Axis 
-        self.yaw_axis_index = 2     # Right Joystick Horizontal Axis
-        self.forward_axis_index = 1     # Left Joystick Vertical Axis
-        self.left_axis_index = 0     # Left Joystick Horizontal Axis
+        self.vertical_axis_index = 3
+        self.yaw_axis_index = 2
+        self.forward_axis_index = 1
+        self.left_axis_index = 0
 
-        # Camera Pitch axis
-        self.up_camera_pitch_axis_index = 5     # Left throttle 
-        self.down_camera_pitch_axis_index = 4   # Right throttle 
+        self.up_camera_pitch_axis_index = 5
+        self.down_camera_pitch_axis_index = 4
 
-        # Trim Pitch and Roll
-        self.pitch_axis_index = 7   # Vertical DPAD
-        self.roll_axis_index = 6   # Horizontal DPAD
+        self.pitch_axis_index = 7
+        self.roll_axis_index = 6
+
+        ## BLUE ROV PARAMS ##
+        self.pitch_trim = 0.0
+        self.roll_trim = 0.0
+        self.trim_step = 0.05
+        self.max_trim = 1.0
+
+        agent_param = self.declare_parameter("agent", "bluerov").value
+        self.agent = agent_keys.get(agent_param.lower(), AgentType.BLUEROV)
 
         self.enabled = False
         self.get_logger().info('Joy to AgentCommand node has started.')
 
-    
+    def clamp(self, value, min_value, max_value):
+        return max(min_value, min(value, max_value))
+
+    def get_axis_value(self, msg, index):
+        return msg.axes[index] if len(msg.axes) > index else 0.0
+
+    def update_trim(self, trim_value, input_value):
+        if input_value > 0.5:
+            trim_value += self.trim_step
+        elif input_value < -0.5:
+            trim_value -= self.trim_step
+        return self.clamp(trim_value, -self.max_trim, self.max_trim)
 
     def joy_callback(self, msg: Joy):
-        # Toggle enable/disable based on button press
         if len(msg.buttons) > self.arm_button_index and msg.buttons[self.arm_button_index]:
             self.enabled = True
             self.get_logger().info('AgentCommand publishing ENABLED')
@@ -51,39 +81,49 @@ class JoyToAgentCommand(Node):
             return
 
         agent_cmd = AgentCommand()
+        agent_cmd.header.frame_id = 'auv0'  # TODO: get from parameter
 
-        
-        # TODO parameterize this as holoocean vehicle
-        agent_cmd.header.frame_id = 'auv0'
+        if self.agent == AgentType.BLUEROV:
+            max_thrust = 28.75
 
-        # "[Vertical Front Starboard, Vertical Front Port, Vertical Back Port, Vertical Back Starboard, Angled Front Starboard, Angled Front Port, Angled Back Port, Angled Back Starboard]"
-        max_thrust = 28.75
-        
-        # Map joystick inputs to thruster outputs (example for differential thrust logic)
-        forward = msg.axes[self.forward_axis_index] if len(msg.axes) > self.forward_axis_index else 0.0
-        vertical = msg.axes[self.vertical_axis_index] if len(msg.axes) > self.vertical_axis_index else 0.0
-        yaw = msg.axes[self.yaw_axis_index] if len(msg.axes) > self.yaw_axis_index else 0.0
-        left = msg.axes[self.left_axis_index] if len(msg.axes) > self.left_axis_index else 0.0
-        pitch = msg.axes[self.pitch_axis_index] if len(msg.axes) > self.pitch_axis_index else 0.0
-        roll = msg.axes[self.roll_axis_index] if len(msg.axes) > self.roll_axis_index else 0.0
-        
-        angular_scalar = 0.05    # Scale down yaw to give more fine control
-        yaw *= angular_scalar
-        pitch *= angular_scalar
-        roll *= angular_scalar
+            forward = self.get_axis_value(msg, self.forward_axis_index)
+            vertical = self.get_axis_value(msg, self.vertical_axis_index)
+            yaw = self.get_axis_value(msg, self.yaw_axis_index)
+            left = self.get_axis_value(msg, self.left_axis_index)
 
-        # Basic mixing logic for 8-thruster HoloOcean AUV
-        agent_cmd.command = [
-            (vertical - pitch + roll)* max_thrust,  # Vertical Front Starboard
-            (vertical - pitch - roll)* max_thrust,  # Vertical Front Port
-            (vertical + pitch - roll)* max_thrust,  # Vertical Back Port
-            (vertical + pitch + roll)* max_thrust,  # Vertical Back Starboard
-            # TODO fix so it doesnt go over max thrust
-            (forward + yaw + left) * max_thrust,  # Angled Front Starboard
-            (forward - yaw - left) * max_thrust,  # Angled Front Port
-            (forward - yaw + left) * max_thrust,  # Angled Back Port
-            (forward + yaw - left) * max_thrust   # Angled Back Starboard
-        ]
+            pitch_input = self.get_axis_value(msg, self.pitch_axis_index)
+            roll_input = self.get_axis_value(msg, self.roll_axis_index)
+
+            self.pitch_trim = self.update_trim(self.pitch_trim, pitch_input)
+            self.roll_trim = self.update_trim(self.roll_trim, roll_input)
+
+            angular_scalar = 0.05
+            pitch_scalar = 0.2
+
+            yaw *= angular_scalar
+            pitch = self.pitch_trim * pitch_scalar
+            roll = self.roll_trim * angular_scalar
+
+            agent_cmd.command = [
+                (vertical + pitch + roll) * max_thrust,
+                (vertical + pitch - roll) * max_thrust,
+                (vertical - pitch - roll) * max_thrust,
+                (vertical - pitch + roll) * max_thrust,
+                (forward + yaw + left) * max_thrust,
+                (forward - yaw - left) * max_thrust,
+                (forward - yaw + left) * max_thrust,
+                (forward + yaw - left) * max_thrust
+            ]
+
+        elif self.agent == AgentType.SURFACE_VESSEL:
+            left_thrust = self.get_axis_value(msg, self.forward_axis_index)
+            right_thrust = self.get_axis_value(msg, self.vertical_axis_index)
+
+            max_thrust = 1500
+            agent_cmd.command = [
+                left_thrust * max_thrust,
+                right_thrust * max_thrust
+            ]
 
         self.publisher_.publish(agent_cmd)
 

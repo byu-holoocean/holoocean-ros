@@ -13,7 +13,7 @@ def generate_launch_description():
     print('Launching HoloOcean Vehicle Simulation')
 
     base = Path(get_package_share_directory('holoocean_examples'))
-    params_file = base / 'config' / 'bluerov_joy_config.yaml'
+    params_file = base / 'config' / 'joy_config.yaml'
 
     holoocean_namespace = 'holoocean'
 
@@ -47,7 +47,7 @@ def generate_launch_description():
     return LaunchDescription([
         holoocean_main_node,
         joy_holo,
-        # joy_node,
+        joy_node,
     ])
 
 

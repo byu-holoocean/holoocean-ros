@@ -20,5 +20,6 @@ services:
       - $HOME/.Xauthority:/root/.Xauthority:rw
       - ../../config:/home/ue4/config  # Mount the config directory
       - /dev:/dev     # mount the dev folder for devices and using /dev/shm for ros2 inter device communication
+    privileged: true    # Allow connection to bluetooth xbox controller
     entrypoint: /home/ue4/entrypoint.sh
     network_mode: host  # Connect to host network for ROS interfaces outside of the container

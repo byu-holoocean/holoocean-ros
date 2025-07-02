@@ -1,0 +1,15 @@
+holoocean:
+  holoocean_node:
+    ros__parameters:
+      draw_arrow: false
+      show_viewport: true
+      relative_path: true
+      scenario_path: 'config/blueROV.json'
+      # scenario_path: 'config/surface_vessel.json'
+      # render_quality: 0
+
+  
+  joy_holoocean:
+    ros__parameters:
+      agent: 'bluerov'
+      # agent: 'surface_vessel'
