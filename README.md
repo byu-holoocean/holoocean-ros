@@ -2,7 +2,12 @@
 
 This repository provides ROS 2 integration for [HoloOcean](https://github.com/byu-holoocean/HoloOcean), a high-fidelity marine robotics simulator. It enables publishing sensor data and receiving control commands via ROS 2 topics and messages.
 
-> ✅ **Tested with ROS 2 Humble Hawksbill**
+## Prerequisites
+
+- ROS 2 (tested on ROS 2 Humble Hawksbill): [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
+- HoloOcean installation:
+  - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
+  - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)
 
 ## Installation
 
