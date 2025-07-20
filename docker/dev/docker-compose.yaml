@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: holoocean
+    container_name: holoocean-ros
     runtime: nvidia
     user: ue4
     environment:
@@ -14,7 +14,7 @@ services:
     volumes:
       - ~/frostlab/holoocean_fresh/holoocean/client:/home/ue4/holoocean_client  # Mount the client directory
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
-      - ../..:/home/ue4/ros2_ws/src/
+      - ../../..:/home/ue4/ros2_ws/src/
       - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME/.Xauthority:/root/.Xauthority:rw
