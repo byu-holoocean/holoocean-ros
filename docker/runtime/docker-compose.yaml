@@ -14,5 +14,6 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ../../config:/home/ue4/config  # Mount the config directory
+      - /dev/shm:/dev/shm  # Use /dev/shm for ROS2 inter-device communication
     network_mode: host  # Connect to host network for ROS interfaces outside of the container
     command: ["tail", "-f", "/dev/null"]  # Keep the container running
