@@ -2,9 +2,11 @@
 
 This repository provides ROS 2 integration for [HoloOcean](https://github.com/byu-holoocean/HoloOcean), a high-fidelity marine robotics simulator. It enables publishing sensor data and receiving control commands via ROS 2 topics and messages.
 
+This ROS2 interface is designed to allow the user to configure a [HoloOcean scenario json file](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/usage/scenarios.html#scenario-file-format) and then provide the interfaces to interact with the agent and enviornment with topics, services, and parameters. 
+
 ## Prerequisites
 
-- ROS 2 (tested on ROS 2 Humble Hawksbill): [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
+- ROS 2 (tested on ROS 2 Humble Hawksbill)
 - HoloOcean installation:
   - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
   - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)
@@ -24,9 +26,8 @@ source install/setup.bash
 
 ## ⚠️ Notes
 
-* **You must use the `develop` branch of HoloOcean** for ROS 2 compatibility.
 * Avoid using virtual environments (e.g., Conda) for ROS 2 and HoloOcean; they may cause runtime or dependency issues.
-* The simulation will run at maximum speed by default. This may result in timing mismatches with real-time ROS controllers.
+* The simulation time can be faster or slower than real time. Use the `/clock` topic and to [synchronize nodes](https://design.ros2.org/articles/clock_and_time.html).
 
 ## Launching the Simulation
 
@@ -45,9 +46,9 @@ This is the main simulation interface node. It:
 * **Loads a scenario configuration file** and launches the HoloOcean environment.
 * **Subscribes** to:
 
-  * `command/control` for raw control input
-  * `command/agent` for actuator-level commands
-  * `depth`, `heading`, and `speed` for individual autopilot inputs
+  * `command/control` for control of control surfaces/actuators when using the [fossen dynamic models](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/agents/docs/fossen-based-dynamics.html)
+  * `command/agent` command input for a HoloOcean agent depending on [control scheme](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/agents/docs/control-schemes.html) defined in the agent scenario. 
+  * `depth`, `heading`, and `speed` for individual autopilot inputs (Control mode needs to be in autopilot).
 * **Publishes**:
 
   * Sensor data from all active HoloOcean agents
@@ -94,7 +95,7 @@ Runtime and development containers available.
 Use `ros2 bag` to record topics:
 
 ```bash
-ros2 bag record /holoocean/desiredHSD /holoocean/RotationSensor /holoocean/LocationSensor -o ~/rosbags/holoocean_test
+ros2 bag record /holoocean/RotationSensor /holoocean/LocationSensor
 ```
 
 See the [ROS 2 Bag Documentation](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Recording-And-Playing-Back-Data/Recording-And-Playing-Back-Data.html) for more info.
