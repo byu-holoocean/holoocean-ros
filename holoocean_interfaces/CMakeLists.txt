@@ -37,6 +37,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ControlCommand.msg"
   "msg/DesiredCommand.msg"
   "msg/AgentCommand.msg"
+  "msg/SensorCommand.msg"
   "srv/SetControlMode.srv"
   DEPENDENCIES std_msgs std_srvs
 )

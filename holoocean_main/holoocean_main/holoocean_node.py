@@ -5,7 +5,7 @@ from holoocean_main.interface.holoocean_interface import *
 from ament_index_python.packages import get_package_share_directory
 import os
 
-from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand
+from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand, SensorCommand
 from holoocean_interfaces.srv import SetControlMode
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
@@ -61,7 +61,8 @@ class HoloOceanNode(Node):
         ######## CUSTOM SUBSCRIBERS ############
         
         self.ucommand_sub = self.create_subscription(ControlCommand, 'command/control', self.u_control_callback, 10)
-        self.ucommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.acommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.sensor_command_sub = self.create_subscription(SensorCommand, 'command/sensor', self.sensor_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
@@ -149,6 +150,12 @@ class HoloOceanNode(Node):
         vehicle_name = msg.header.frame_id
         agent_command = np.array(msg.command)
         self.interface.set_agent_command(vehicle_name, agent_command)
+    
+    def sensor_command_callback(self, msg):
+        agent_name = msg.agent_name
+        sensor_name = msg.sensor_name
+        rotation = np.array(msg.rotation)
+        self.interface.rotate_sensor(agent_name, sensor_name, rotation)
 
     
     def depth_callback(self, msg):

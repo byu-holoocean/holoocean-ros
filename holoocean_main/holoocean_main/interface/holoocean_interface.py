@@ -243,6 +243,9 @@ class HolooceanInterface():
         # TODO probably not the best way to do this but will work for now
         self.agent_commands[vehicle] = command
 
+    def rotate_sensor(self, agent_name, sensor_name, rotation):
+        print("GOT HERE: ", rotation)
+        self.env.agents[agent_name].sensors[sensor_name].rotate(rotation)
 
     def reset_enviornment(self, vehicle=None):
         if vehicle is None:
