@@ -12,7 +12,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DISPLAY=${DISPLAY}
     volumes:
-      - ~/frostlab/holoocean_fresh/holoocean/client:/home/ue4/holoocean_client  # Mount the client directory
+      - <PATH TO HOLOOCAN>/holoocean/client:/home/ue4/holoocean_client  # Mount the client directory
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
       - ../../:/home/ue4/ros2_ws/src/holoocean-ros
       - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
