@@ -4,6 +4,12 @@ build/
 install/
 log/
 
+# Git keep and chaches for docker pip installs
+docker/dev/build_cache/egg-info/*
+!docker/dev/build_cache/egg-info/.gitkeep
+docker/dev/build_cache/build/*
+!docker/dev/build_cache/build/.gitkeep
+!docker/dev/build_cache/build/
 
 !*.xml
 !*.json

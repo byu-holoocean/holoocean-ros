@@ -14,10 +14,12 @@ services:
     volumes:
       - <PATH TO HOLOOCAN>/holoocean/client:/home/ue4/holoocean_client  # Mount the client directory
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
-      - ../../:/home/ue4/ros2_ws/src/holoocean-ros
+      - ../..:/home/ue4/ros2_ws/src/holoocean-ros
       - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME/.Xauthority:/root/.Xauthority:rw
+      - ./build_cache/build:/home/ue4/holoocean_client/build:rw   # Permissions fix for when holoocean is built inside and outside the container
+      - ./build_cache/egg-info:/home/ue4/holoocean_client/src/holoocean.egg-info:rw      # Permissions fix for when holoocean is built inside and outside the container
       - ../../config:/home/ue4/config  # Mount the config directory
       - /dev:/dev     # mount the dev folder for devices and using /dev/shm for ros2 inter device communication
     privileged: true    # Allow connection to bluetooth xbox controller
