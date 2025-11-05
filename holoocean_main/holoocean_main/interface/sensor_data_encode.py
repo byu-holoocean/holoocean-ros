@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from sensor_msgs.msg import Imu, Image
+from sensor_msgs.msg import Imu, Image, MagneticField
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
@@ -397,6 +397,19 @@ class ImageEncoder(SensorPublisher):
 
         return msg
 
+class MagneticFieldEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = MagneticField
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.magnetic_field.x = float(sensor_data[0])
+        msg.magnetic_field.y = float(sensor_data[1])
+        msg.magnetic_field.z = float(sensor_data[2])
+        return msg
+
 # Define other encoders similarly...
 
 
@@ -413,5 +426,6 @@ encoders = {
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     'RGBCamera': ImageEncoder,
+    'MagnetometerSensor': MagneticFieldEncoder,
     # Add other sensor type encoders here...
 }
