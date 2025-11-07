@@ -55,9 +55,28 @@
                 "ros_publish": true,
                 "configuration": {
                     "LaserMaxDistance": 50,
-                    "LaserCount": 50,
-                    "LaserDebug": true
+                    "LaserCount": 20,
+                    "LaserDebug": false
                 }
+            },
+            {
+                "sensor_type": "RaycastSemanticLidar",
+                "socket": "CameraSocket",
+                "configuration": { 
+                    "Channels": 128,
+                    "Range": 200, 
+                    "PointsPerSecond": 131072, 
+                    "RotationFrequency": 10.0, 
+                    "UpperFovLimit": 22.5,
+                    "LowerFovLimit": -22.5,
+                    "DropOffGenRate": 0.0,
+                    "DropOffIntensityLimit": 0.0,
+                    "ShowDebugPoints": true,
+                    "NoiseStdDev": 0.0
+                },
+                "Hz": 10.0,
+                "location": [0,0,0],
+                "ros_publish": true
             },
             {
                 "sensor_type": "DepthSensor",
@@ -68,7 +87,7 @@
             }
         ],
         "control_scheme": 0,  
-        "location": [0,-500,0],
+        "location": [259,-740,0],
         "rotation": [0,0,0]
         }
     ]

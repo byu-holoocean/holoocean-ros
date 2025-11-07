@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
+from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2, PointField
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
 import numpy as np
+from struct import pack, unpack
 
 # TODO make a not about how the Dynamics Sensor IMU is not in local frame
 multi_publisher_sensors = {
@@ -461,6 +462,139 @@ class LaserScanEncoder(SensorPublisher):
 
         return msg
 
+class LidarEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = PointCloud2
+
+
+        self.fields = [
+            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(name='intensity', offset=12, datatype=PointField.FLOAT32, count=1),
+            PointField(name='t', offset=16, datatype=PointField.FLOAT32, count=1),
+            PointField(name='ring', offset=20, datatype=PointField.UINT8, count=1),
+            PointField(name='obj_tag', offset=21, datatype=PointField.UINT8, count=1),
+            PointField(name='rgb', offset=22, datatype=PointField.FLOAT32, count=1),
+        ]
+        
+        # Define structured dtype for point cloud
+        self.sem_pt_dtype = np.dtype({
+            'names': ['x', 'y', 'z', 'intensity', 't', 'ring', 'obj_tag', 'rgb'],
+            'formats': [np.float32, np.float32, np.float32, np.float32, 
+                       np.float32, np.uint8, np.uint8, np.float32],
+            'offsets': [0, 4, 8, 12, 16, 20, 21, 22]   
+        })
+        
+        self.point_step = 26
+        self.scans = 0
+        self.full_lidar_scan = None
+
+    
+    def get_color_from_id(self, id):
+        id_colors = {
+            0: [0,0,0],   	    #       // None         =    0u,
+            1: [79, 82, 77],    #		// Asphalt		 =    1u,
+            2: [212, 191, 125], #		// Bench		 =	  2u,
+            3: [209, 208, 203], #		// BikeRack		 =	  3u,
+            4: [31, 240, 205],  #		// Building =   4u,
+            5: [240, 220, 43],  #		// Bus =  5u,
+            6: [177, 247, 124], #    	// Bush	 =	  6u,
+            7: [224, 109, 237], #		// Car = 7u,
+            8: [161, 247, 233], #		// Ceiling = 8u,
+            9: [65, 13, 255],   #		// Chair = 9u,
+            10:[255, 169, 10],  #		// Cone = 10u,
+            11:[140, 86, 0],    #		// Crate = 11u,
+            12:[242, 65, 224],  #		// Desk = 12u,
+            13:[0, 138, 14],    #		// Dumpster = 13u,
+            14:[255, 0, 0],     #		// FireHydrant = 14u,
+            15:[2, 125, 104],   #		// Floor = 15u,
+            16:[0, 184, 92],    #		// GarbageCan = 16u,
+            17:[91, 235, 52],   # 		// Grass = 17u,
+            18:[143, 129, 6],   #		// Pallet = 18u,
+            19:[222, 164, 177], #		// ParkingGate = 19u,
+            20:[195, 0, 255],   #		// PatioUmbrella = 20u,
+            21:[242, 97, 130],  #		// Railing = 21u,
+            22:[124, 6, 138],   #		// SemiTruck = 22u,
+            23:[232, 232, 232], #		// Sidewalk = 23u,
+            24:[222, 218, 245], #		// SpeedLimitSign = 24u,
+            25:[250, 37, 62],   #		// StopSign = 25u,
+            26:[255, 149, 10],  #		// StreetLamps = 26u,
+            27:[186, 17, 169],  #		// Table = 27u,
+            28:[69, 99, 46],    #		// Tree = 28u,
+            29:[0, 0, 0],       #		// Unlabeled = 29u,
+            30:[126, 60, 250],  #		// Wall = 30u,
+            31:[107, 156, 137], # 		// Trash = 31u
+            32:[255, 255, 255], #       // Any          =  0xFF    
+        }
+        rgb = id_colors[int(id)]
+        rgb_int = (int(rgb[0]) << 16) | (int(rgb[1]) << 8) | int(rgb[2])
+        rgb_float = unpack('f', pack('I', rgb_int))[0]  # Convert RGB uint32 to float32
+        return rgb_float
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        
+        # sensor_data :[x, y, z, angle, obj_id, obj_instance]
+        
+        if self.full_lidar_scan is None and len(sensor_data) > 0:
+            # print("LiDAR data len:",len(sensor_data))
+            self.full_lidar_scan = sensor_data
+        elif len(sensor_data) > 0:
+            # print("LiDAR data len:",len(sensor_data))
+            self.full_lidar_scan = np.vstack((self.full_lidar_scan,sensor_data))
+        # elif self.full_lidar_scan is None:
+    
+        self.scans +=1    
+
+        if self.scans == 30:
+            # print("Updating prev scan")
+            # print("Number of Accumulated Points:",self.full_lidar_scan.shape[0])
+            points = self.full_lidar_scan
+            self.scans = 0
+            self.full_lidar_scan = None
+        
+        
+            # shape: (N, 7)
+            # print("Lidar points shape:", points.shape)
+            
+            # Create structured array for point cloud data
+            # pc_data = np.zeros((points.shape[0], 1), dtype=self.sem_pt_dtype)
+            pc_data = np.zeros(points.shape[0], dtype=self.sem_pt_dtype)
+            
+            # Populate point cloud data
+            pc_data['x'] = points[:, 0]
+            pc_data['y'] = points[:, 1]
+            pc_data['z'] = points[:, 2]
+            pc_data['intensity'] = points[:, 3]
+            pc_data['t'] = 0.0  # relative time in nanoseconds
+            pc_data['ring'] = points[:, 4].astype(np.uint8)
+            # TODO WHY IS THIS 6 before
+            pc_data['obj_tag'] = points[:, 5].astype(np.uint8)
+            
+            # Compute RGB colors from object IDs
+            # TODO WHY IS THIS 6 before
+            obj_ids = points[:, 5].astype(int)
+            pc_data['rgb'] = np.array([self.get_color_from_id(obj_id) for obj_id in obj_ids])
+            
+            # Set message parameters
+            # TODO check which fields can change with configuration
+            msg.height = 1 
+            msg.width = pc_data.shape[0] 
+            msg.is_dense = True
+            msg.is_bigendian = False
+            msg.point_step = self.point_step
+            msg.row_step = pc_data.shape[0] * self.point_step
+            msg.fields = self.fields
+            # msg.data = np.frombuffer(pc_data.tobytes(), dtype=np.uint8)
+            msg.data = pc_data.tobytes()
+
+        return msg
+
+        
 # Define other encoders similarly...
 
 
@@ -481,4 +615,6 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     # Add other sensor type encoders here...
+    'RaycastSemanticLidar': LidarEncoder,
+    'RaycastLidar': LidarEncoder,
 }
