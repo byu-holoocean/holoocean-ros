@@ -2,8 +2,13 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
+from holoocean_interfaces.msg import DVLSensorRange, ControlCommand, AcousticBeaconSensor
 import numpy as np
+import json
+import math
+from rclpy.time import Time
+from rclpy.duration import  Duration
+
 
 # TODO make a not about how the Dynamics Sensor IMU is not in local frame
 multi_publisher_sensors = {
@@ -460,7 +465,119 @@ class LaserScanEncoder(SensorPublisher):
         msg.ranges = sensor_data.tolist()
 
         return msg
+class AcousticBeaconEncoder(SensorPublisher):
+    """
+    Encoder for HoloOcean AcousticBeaconSensor.
+    Publishes one AcousticBeaconSensor msg per received frame.
+    Supported frame shapes (HoloOcean v2.2.1):
+      ["OWAY",    from_id, payload]
+      ["OWAYU",   from_id, payload, φ, θ]
+      ["MSG_REQ", from_id, payload]              -> peer sends MSG_RESP
+      ["MSG_RESP",from_id, payload]
+      ["MSG_REQU",from_id, payload, φ, θ]        -> peer sends MSG_RESPU
+      ["MSG_RESPU",from_id, payload, φ, θ]
+      ["MSG_REQX",from_id, payload, φ, θ, (d?)]  -> peer sends MSG_RESPX
+      ["MSG_RESPX",from_id, payload, φ, θ, r, d]
+    """
 
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = AcousticBeaconSensor
+
+    @staticmethod
+    def _safe(raw, idx, default=None):
+        try:
+            return raw[idx]
+        except Exception:
+            return default
+
+    @staticmethod
+    def _as_float(x):
+        try:
+            return float(x)
+        except Exception:
+            return math.nan
+
+    def encode(self, sensor_data):
+        """
+        Convert the sensor_data buffer (0..N frames) into one message.
+        NOTE: our bridge infrastructure typically publishes a single message per sensor
+        per tick. To preserve that, we publish the *last* frame this tick.
+        If you prefer to publish *all* frames, loop and publish one-by-one in the caller.
+        """
+        msg = self.message_type()
+
+        # Default to NaNs for missing numeric fields:
+        msg.timestamp   = self.node.get_clock().now().nanoseconds if hasattr(self, 'node') else 0
+        msg.msg_type    = ""
+        msg.from_beacon = -1
+        msg.azimuth     = math.nan
+        msg.elevation   = math.nan
+        msg.range       = math.nan
+        msg.z           = math.nan
+
+        if sensor_data is None:
+            return msg
+
+        frames = self._to_list(sensor_data)
+        # Ensure frames is a list of frame-arrays
+        if not isinstance(frames, list) or (len(frames) > 0 and not isinstance(frames[0], (list, tuple))):
+            frames = [frames]
+
+        if len(frames) == 0:
+            return msg
+
+        raw = frames[-1]  # take the most recent frame this tick
+        if not isinstance(raw, list) or len(raw) < 2:
+            return msg
+
+        mtype = str(raw[0])
+        frm   = self._safe(raw, 1, -1)
+        msg.msg_type    = mtype
+        msg.from_beacon = int(frm) if isinstance(frm, (int, np.integer)) else -1
+        # Defaults remain NaN unless the type provides them
+        if mtype in ("OWAY", "MSG_REQ", "MSG_RESP"):
+            pass  # only type + from_id present
+
+        elif mtype in ("OWAYU", "MSG_REQU", "MSG_RESPU"):
+            phi   = self._safe(raw, 3, None)
+            theta = self._safe(raw, 4, None)
+            msg.azimuth   = self._as_float(phi)
+            msg.elevation = self._as_float(theta)
+
+        elif mtype == "MSG_REQX":
+            # request-with-geometry (no range yet)
+            phi   = self._safe(raw, 3, None)
+            theta = self._safe(raw, 4, None)
+            # some builds may append depth at idx 6; handle gracefully
+            depth = self._safe(raw, 6, None)
+            msg.azimuth   = self._as_float(phi)
+            msg.elevation = self._as_float(theta)
+            msg.z         = self._as_float(depth) if depth is not None else math.nan
+
+        elif mtype == "MSG_RESPX":
+            phi   = self._safe(raw, 3, None)
+            theta = self._safe(raw, 4, None)
+            rng   = self._safe(raw, 5, None)
+            depth = self._safe(raw, 6, None)
+            msg.azimuth   = self._as_float(phi)
+            msg.elevation = self._as_float(theta)
+            msg.range     = self._as_float(rng)
+            msg.z         = self._as_float(depth)
+
+        else:
+            # Unknown/extended types: try best-effort mapping
+            phi   = self._safe(raw, 3, None)
+            theta = self._safe(raw, 4, None)
+            rng   = self._safe(raw, 5, None)
+            depth = self._safe(raw, 6, None)
+            msg.azimuth   = self._as_float(phi)
+            msg.elevation = self._as_float(theta)
+            msg.range     = self._as_float(rng)
+            msg.z         = self._as_float(depth)
+
+        return msg
 # Define other encoders similarly...
 
 
@@ -480,5 +597,6 @@ encoders = {
     'MagnetometerSensor': MagneticFieldEncoder,
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
+    'AcousticBeaconSensor': AcousticBeaconEncoder,
     # Add other sensor type encoders here...
 }
