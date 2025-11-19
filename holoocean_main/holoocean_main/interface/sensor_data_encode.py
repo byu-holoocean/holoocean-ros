@@ -8,7 +8,8 @@ import numpy as np
 # TODO make a not about how the Dynamics Sensor IMU is not in local frame
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
-    'DynamicsSensor': ['Odom', 'IMU']
+    'DynamicsSensor': ['Odom', 'IMU'],
+    'IMUSensor': ['', 'Bias']
     # TODO add Camera sensor and info topic
 }
 
@@ -89,6 +90,33 @@ class IMUEncoder(SensorPublisher):
         
         msg.linear_acceleration_covariance = self.accel_cov
         msg.angular_velocity_covariance = self.ang_cov
+
+        return msg
+
+class IMUBiasEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+        
+        self.message_type = TwistWithCovarianceStamped
+        self.cov = [0.0] * 36
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        
+        # Check if bias data is available (requires ReturnBias=True in config)
+        if sensor_data.shape[0] >= 4:
+            # Accelerometer Bias (Row 2) -> Linear Twist
+            msg.twist.twist.linear.x = float(sensor_data[2, 0])
+            msg.twist.twist.linear.y = float(sensor_data[2, 1])
+            msg.twist.twist.linear.z = float(sensor_data[2, 2])
+
+            # Gyroscope Bias (Row 3) -> Angular Twist
+            msg.twist.twist.angular.x = float(sensor_data[3, 0])
+            msg.twist.twist.angular.y = float(sensor_data[3, 1])
+            msg.twist.twist.angular.z = float(sensor_data[3, 2])
+
+        msg.twist.covariance = self.cov
 
         return msg
 
@@ -466,6 +494,7 @@ class LaserScanEncoder(SensorPublisher):
 
 encoders = {
     'IMUSensor': IMUEncoder,
+    'IMUSensorBias': IMUBiasEncoder,
     'DVLSensorVelocity': DVLEncoder,
     'DVLSensorRange': DVLRangeEncoder,
     'DepthSensor': DepthEncoder,
