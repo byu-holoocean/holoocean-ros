@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
-from holoocean_interfaces.msg import AgentCommand, SensorCommand
+from holoocean_interfaces.msg import AgentCommand #, SensorCommand
 from enum import Enum
 
 
@@ -21,7 +21,7 @@ class JoyToAgentCommand(Node):
         super().__init__('joy_holoocean')
 
         self.publisher_ = self.create_publisher(AgentCommand, 'command/agent', 10)
-        self.sensor_command_publisher_ = self.create_publisher(SensorCommand, 'command/sensor', 10)
+        # self.sensor_command_publisher_ = self.create_publisher(SensorCommand, 'command/sensor', 10)
         self.subscription = self.create_subscription(
             Joy,
             '/joy',
