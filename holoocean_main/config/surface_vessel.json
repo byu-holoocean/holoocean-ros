@@ -51,6 +51,15 @@
                 "ros_publish": true
             },
             {
+                "sensor_type": "RangeFinderSensor",
+                "ros_publish": true,
+                "configuration": {
+                    "LaserMaxDistance": 50,
+                    "LaserCount": 50,
+                    "LaserDebug": true
+                }
+            },
+            {
                 "sensor_type": "DepthSensor",
                 "ros_publish": true,
                 "configuration":{

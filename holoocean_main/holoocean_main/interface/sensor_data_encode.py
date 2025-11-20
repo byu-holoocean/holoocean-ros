@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from sensor_msgs.msg import Imu, Image
+from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
@@ -9,6 +9,7 @@ import numpy as np
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
     'DynamicsSensor': ['Odom', 'IMU']
+    # TODO add Camera sensor and info topic
 }
 
 class SensorPublisher(ABC):
@@ -21,6 +22,12 @@ class SensorPublisher(ABC):
             self.config = sensor_dict['configuration']
         else:
             self.config = None
+
+        if "socket" in sensor_dict and sensor_dict['socket'] != "":
+            self.socket = sensor_dict['socket']
+        else:
+            self.socket = "base_link"
+
         self.publisher = None
 
 
@@ -66,7 +73,7 @@ class IMUEncoder(SensorPublisher):
     
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'base_link'
+        msg.header.frame_id = self.socket
         msg.orientation_covariance[0] = -1
 
         # Assign acceleration
@@ -113,7 +120,7 @@ class DVLEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'base_link'
+        msg.header.frame_id = self.socket
         # Assign velocity
         msg.twist.twist.linear.x = float(sensor_data[0])
         msg.twist.twist.linear.y = float(sensor_data[1])
@@ -132,6 +139,7 @@ class DVLRangeEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
+        msg.header.frame_id = self.socket
 
         msg.range[0] = float(sensor_data[3])
         msg.range[1] = float(sensor_data[4])
@@ -153,7 +161,7 @@ class DepthEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'base_link'
+        msg.header.frame_id = self.socket
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
         return msg
@@ -182,7 +190,7 @@ class LocationEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'odom'
+        msg.header.frame_id = self.socket
         #Frame ID might be map
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
@@ -199,6 +207,7 @@ class RotationEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         rpy_msg = self.message_type()
+        rpy_msg.header.frame_id = self.socket
         rpy_msg.vector.x = float(sensor_data[0])
         rpy_msg.vector.y = float(sensor_data[1])
         rpy_msg.vector.z = float(sensor_data[2])
@@ -213,7 +222,7 @@ class VelocityEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'base_link'
+        msg.header.frame_id = self.socket
         #Frame id might actually be base link for velocity
 
         # Assign velocity
@@ -232,8 +241,7 @@ class DynamicsEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'odom'
-        msg.child_frame_id = 'base_link'
+        msg.header.frame_id = 'holoocean_global_frame'
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
         elif len(sensor_data) != 19:
@@ -344,7 +352,7 @@ class GPSEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'gps_link'
+        msg.header.frame_id = self.socket
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
         msg.pose.pose.position.z = float(sensor_data[2])
@@ -372,6 +380,7 @@ class ImageEncoder(SensorPublisher):
     
     def encode(self, sensor_data):
         msg = self.message_type()
+        msg.header.frame_id = self.socket
 
         # Remove the alpha channel (convert RGBA -> RGB)
         num_channels = 3  
@@ -397,6 +406,61 @@ class ImageEncoder(SensorPublisher):
 
         return msg
 
+class MagneticFieldEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = MagneticField
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        # Assign magnetic field values
+        msg.magnetic_field.x = float(sensor_data[0])
+        msg.magnetic_field.y = float(sensor_data[1])
+        msg.magnetic_field.z = float(sensor_data[2])
+        return msg
+
+class LaserScanEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = LaserScan
+        
+        count = 1
+        range_max = 10.0
+
+        if self.config is not None:
+            if "LaserMaxDistance" in self.config:
+                range_max = float(self.config["LaserMaxDistance"])
+            if "LaserCount" in self.config:
+                count = int(self.config["LaserCount"])
+
+        self.msg_template = self.message_type()
+
+        self.msg_template.header.frame_id = self.socket
+        self.msg_template.angle_min = 0.0 # 0 degrees
+        self.msg_template.angle_max = 6.28319   # 360 degrees
+        self.msg_template.angle_increment = 6.28319 / count
+
+        self.msg_template.range_min = 0.0
+        self.msg_template.range_max = range_max
+
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        # Copy template fields
+        msg.header.frame_id = self.msg_template.header.frame_id
+        msg.angle_min = self.msg_template.angle_min
+        msg.angle_max = self.msg_template.angle_max
+        msg.angle_increment = self.msg_template.angle_increment
+        msg.range_min = self.msg_template.range_min
+        msg.range_max = self.msg_template.range_max
+
+        msg.ranges = sensor_data.tolist()
+
+        return msg
+
 # Define other encoders similarly...
 
 
@@ -413,5 +477,8 @@ encoders = {
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     'RGBCamera': ImageEncoder,
+    'MagnetometerSensor': MagneticFieldEncoder,
+    'CameraSensor': ImageEncoder,
+    'RangeFinderSensor': LaserScanEncoder,
     # Add other sensor type encoders here...
 }
