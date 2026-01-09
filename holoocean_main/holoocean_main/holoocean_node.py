@@ -11,6 +11,8 @@ from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from rosgraph_msgs.msg import Clock
 
+from visualization_msgs.msg import Marker
+from std_msgs.msg import ColorRGBA
 
 package_name = 'holoocean_main'
 
@@ -33,6 +35,12 @@ class HoloOceanNode(Node):
         # NOTE: Maybe move this to the ros message to draw the arrow or not
         self.declare_parameter('draw_arrow', True)
         draw_arrow = self.get_parameter('draw_arrow').get_parameter_value().bool_value
+
+        self.declare_parameter('draw_waypoints', False)
+
+        draw_waypoints = self.get_parameter('draw_waypoints').get_parameter_value().bool_value
+
+
         self.declare_parameter('render_quality', -1)
         render_quality = self.get_parameter('render_quality').get_parameter_value().integer_value
         # Set Render quality to None because of bug with frames per sec set to false when render quality is set
@@ -69,6 +77,8 @@ class HoloOceanNode(Node):
         self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, 10)
 
         self.clock_pub = self.create_publisher(Clock, '/clock', 10)
+
+        self.debug_points_sub = self.create_subscription(Marker, 'debug/points', self.debug_points_callback, 10)
 
         # Services
         self.reset_srv = self.create_service(Trigger, 'reset', self.reset)
@@ -163,6 +173,27 @@ class HoloOceanNode(Node):
         vehicle_name = msg.header.frame_id 
         self.interface.set_speed(vehicle_name, msg.data)
 
+    def debug_points_callback(self, msg):
+        # Marker.points is a list of geometry_msgs/Point
+        points = [[p.x, p.y, p.z] for p in msg.points]
+        
+        # ROS ColorRGBA (0.0-1.0) -> HoloOcean RGB (0-255)
+        color = [
+            int(msg.color.r * 255),
+            int(msg.color.g * 255),
+            int(msg.color.b * 255)
+        ]
+
+        thickness = msg.scale.x * 100 # Holoocean (Unreal) draw_points units is in centimeters, RVIZ is in meters
+        
+        # ROS duration -> float seconds
+        lifetime = msg.lifetime.sec + (msg.lifetime.nanosec / 1e9)
+        
+        # If points list is empty, use the single pose position (common for CUBE/SPHERE)
+        if not points:
+            points = [[msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]]
+
+        self.interface.draw_debug_points(points, color, thickness, lifetime)
     
 def main(args=None):
     rclpy.init(args=args)

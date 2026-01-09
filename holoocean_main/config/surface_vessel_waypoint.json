@@ -1,0 +1,75 @@
+{
+    "name": "SurfaceVessel",
+    "package_name": "Ocean",
+    "world": "SimpleUnderwater",
+    "main_agent": "asv0",
+    "ticks_per_sec": 30,
+    "frames_per_sec": 30,
+    "agents": [
+        {
+        "agent_name": "asv0",
+        "agent_type": "SurfaceVessel",
+        "sensors": [
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": true
+
+            },
+            {
+                "sensor_type": "DVLSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "VelSigma": [0.1,0.1,0.1,0.1]
+                }
+            },
+            {
+                "sensor_type": "IMUSensor",
+                "ros_publish": true,
+                "socket": "COM",
+                "configuration":{
+                    "AccelSigma": [0.01,0.01,0.01],
+                    "AngVelSigma": [0.01,0.01,0.01],
+                    "ReturnBias": true
+                }
+            },
+            {
+                "sensor_type": "GPSSensor",
+                "ros_publish": true,
+                "tick_every": 30,
+                "configuration":{
+                    "Sigma": [0.001,0.001,0.001],
+                    "Depth": 0.5,
+                    "DepthSigma": 0.05
+                }
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": true
+            },
+            {
+                "sensor_type": "RangeFinderSensor",
+                "ros_publish": true,
+                "configuration": {
+                    "LaserMaxDistance": 50,
+                    "LaserCount": 50,
+                    "LaserDebug": false
+                }
+            },
+            {
+                "sensor_type": "DepthSensor",
+                "ros_publish": true,
+                "configuration":{
+                    "Sigma": 0.03
+                }
+            }
+        ],
+        "control_scheme": 1,  
+        "location": [0,0,2],
+        "rotation": [0,0,0]
+        }
+    ]
+}

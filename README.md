@@ -49,6 +49,7 @@ This is the main simulation interface node. It:
   * `command/control` for control of control surfaces/actuators when using the [fossen dynamic models](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/agents/docs/fossen-based-dynamics.html)
   * `command/agent` command input for a HoloOcean agent depending on [control scheme](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/agents/docs/control-schemes.html) defined in the agent scenario. 
   * `depth`, `heading`, and `speed` for individual autopilot inputs (Control mode needs to be in autopilot).
+  * `debug/points` for drawing marker points in the simulation, i.e. waypoints, of type [Marker](https://docs.ros.org/en/humble/Tutorials/Intermediate/RViz/Marker-Display-types/Marker-Display-types.html#the-marker-message). Only type `Cube` is drawn in HoloOcean, but normal types will still show up in RVIZ.
 * **Publishes**:
 
   * Sensor data from all active HoloOcean agents
