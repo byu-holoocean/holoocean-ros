@@ -51,6 +51,19 @@
                 "ros_publish": true
             },
             {
+		      "sensor_type": "RGBCamera",
+		      "sensor_name": "FrontRGBD",
+
+		      "socket": "CameraSocket",
+		      "Hz": 10,
+		      "ros_publish": "True",
+		      "configuration": {
+			"CaptureWidth": 640,
+			"CaptureHeight": 480,
+			"FovAngle": 90.0
+      }
+    },
+            {
                 "sensor_type": "DepthSensor",
                 "ros_publish": true,
                 "configuration":{

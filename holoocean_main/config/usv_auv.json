@@ -1,0 +1,166 @@
+{
+    "name": "multiagent",
+    "package_name": "Ocean",
+    "world": "PierHarbor",
+    "main_agent": "auv0",
+    "ticks_per_sec": 30,
+    "frames_per_sec": 30,
+    "agents": [
+        {
+        "agent_name": "auv1",
+        "agent_type": "SurfaceVessel",
+        "sensors": [
+            {
+            
+                    "sensor_type": "AcousticBeaconSensor",
+                    "sensor_name": "USVModem1",
+                    "ros_publish": "TRUE",
+                    "configuration": {      
+                    "id": 0,
+                    "CheckVisible": false,
+                    "MaxDistance": 2000.0,
+                    "DistanceSigma": 0.10}
+            },
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": "TRUE"
+
+            },
+            {
+                "sensor_type": "DVLSensor",
+                "ros_publish": "TRUE",
+                "configuration":{
+                    "VelSigma": [0.1,0.1,0.1,0.1]
+                }
+            },
+            {
+                "sensor_type": "IMUSensor",
+                "ros_publish": "TRUE",
+                "socket": "COM",
+                "configuration":{
+                    "AccelSigma": [0.01,0.01,0.01],
+                    "AngVelSigma": [0.01,0.01,0.01],
+                    "ReturnBias": true
+                }
+            },
+            {
+                "sensor_type": "GPSSensor",
+                "ros_publish": "TRUE",
+                "tick_every": 30,
+                "configuration":{
+                    "Sigma": [0.001,0.001,0.001],
+                    "Depth": 0.5,
+                    "DepthSigma": 0.05
+                }
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": "TRUE"
+            },
+            {
+                "sensor_type": "RangeFinderSensor",
+                "ros_publish": "TRUE",
+                "configuration": {
+                    "LaserMaxDistance": 50,
+                    "LaserCount": 50,
+                    "LaserDebug": true
+                }
+            },
+            {
+                "sensor_type": "DepthSensor",
+                "ros_publish": "TRUE",
+                "configuration":{
+                    "Sigma": 0.03
+                }
+            }
+        ],
+        "control_scheme": 0,  
+        "location": [0,-690,0.3],
+        "rotation": [0,0,0]
+        },
+        {
+        "agent_name": "auv0",
+        "agent_type": "BlueROV2",
+        "sensors": [
+            {
+            
+                    "sensor_type": "AcousticBeaconSensor",
+                    "sensor_name": "AUVModem1",
+                    "ros_publish": "TRUE",
+                    "configuration": {      
+                    "id": 3,
+                    "CheckVisible": false,
+                    "MaxDistance": 2000.0,
+                    "DistanceSigma": 0.10}
+            },
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": "TRUE"
+
+            },
+            {
+                "sensor_type": "DVLSensor",
+                "ros_publish": "TRUE",
+                "configuration":{
+                    "VelSigma": [0.1,0.1,0.1,0.1]
+                }
+            },
+            {
+                "sensor_type": "IMUSensor",
+                "ros_publish": "TRUE",
+                "socket": "COM",
+                "configuration":{
+                    "AccelSigma": [0.01,0.01,0.01],
+                    "AngVelSigma": [0.01,0.01,0.01],
+                    "ReturnBias": true
+                }
+            },
+            {
+                "sensor_type": "GPSSensor",
+                "ros_publish": "TRUE",
+                "tick_every": 30,
+                "configuration":{
+                    "Sigma": [0.001,0.001,0.001],
+                    "Depth": 0.5,
+                    "DepthSigma": 0.05
+                }
+            },
+            {
+                "sensor_type": "RotationSensor",
+                "ros_publish": "TRUE"
+            },
+            {
+		      "sensor_type": "RGBCamera",
+		      "sensor_name": "FrontRGBD",
+
+		      "socket": "CameraSocket",
+		      "Hz": 10,
+		      "ros_publish": "True",
+		      "configuration": {
+			"CaptureWidth": 640,
+			"CaptureHeight": 480,
+			"FovAngle": 90.0
+      }
+    },
+            {
+                "sensor_type": "DepthSensor",
+                "ros_publish": "TRUE",
+                "configuration":{
+                    "Sigma": 0.03
+                }
+            }
+        ],
+        "control_scheme": 0,  
+        "location": [0,-700,-3],
+        "rotation": [0,0,0]
+        }
+    ]
+}

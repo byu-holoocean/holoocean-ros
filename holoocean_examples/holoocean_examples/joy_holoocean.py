@@ -29,13 +29,13 @@ class JoyToAgentCommand(Node):
             10)
 
         ## JOYSTICK PARAMS ##
-        self.arm_button_index = 11
-        self.disarm_button_index = 10
+        self.arm_button_index = 9
+        self.disarm_button_index = 8
 
-        self.vertical_axis_index = 3
-        self.yaw_axis_index = 2
-        self.forward_axis_index = 1
-        self.left_axis_index = 0
+        self.vertical_axis_index = 4
+        self.yaw_axis_index = 3
+        self.forward_axis_index = 2
+        self.left_axis_index = 1
 
         self.up_camera_pitch_axis_index = 5
         self.down_camera_pitch_axis_index = 4
