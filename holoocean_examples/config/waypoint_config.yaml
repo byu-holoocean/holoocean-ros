@@ -1,7 +1,20 @@
 holoocean:
   holoocean_node:
     ros__parameters:
+      use_sim_time: true
       draw_arrow: false
       show_viewport: true
       relative_path: true
       scenario_path: 'config/surface_vessel_waypoint.json'
+      # render_quality: 0
+  
+  waypoint_follower:
+    ros__parameters:
+      use_sim_time: true
+      waypoint_threshold: 3.0
+      waypoint_file: 'config/sv_waypoints.yaml'
+      relative_path: true
+      vehicle_name: 'asv0'
+      loop_waypoints: true
+      marker_scale: 0.2
+      marker_frame: 'world'

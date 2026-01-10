@@ -7,12 +7,10 @@ import os
 
 from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand
 from holoocean_interfaces.srv import SetControlMode
-from std_msgs.msg import Float64
+from visualization_msgs.msg import Marker
 from std_srvs.srv import Trigger
 from rosgraph_msgs.msg import Clock
 
-from visualization_msgs.msg import Marker
-from std_msgs.msg import ColorRGBA
 
 package_name = 'holoocean_main'
 
@@ -56,7 +54,7 @@ class HoloOceanNode(Node):
         if relative_path:
             package_dir = Path(get_package_share_directory('holoocean_main'))
             config_file = os.path.join(package_dir, scenario_path)
-            print("config: ", config_file)
+            print("Using Scenario config file: ", config_file)
         else:
             config_file = scenario_path
 
@@ -178,12 +176,22 @@ class HoloOceanNode(Node):
         points = [[p.x, p.y, p.z] for p in msg.points]
         
         # ROS ColorRGBA (0.0-1.0) -> HoloOcean RGB (0-255)
+        colors= []
         color = [
             int(msg.color.r * 255),
             int(msg.color.g * 255),
             int(msg.color.b * 255)
         ]
-
+        colors = [color] * len(points)
+        if len(msg.colors) > 0:
+            colors = []
+            for c in msg.colors:
+                colors.append([
+                    int(c.r * 255),
+                    int(c.g * 255),
+                    int(c.b * 255)
+                ])
+            
         thickness = msg.scale.x * 100 # Holoocean (Unreal) draw_points units is in centimeters, RVIZ is in meters
         
         # ROS duration -> float seconds
@@ -192,8 +200,7 @@ class HoloOceanNode(Node):
         # If points list is empty, use the single pose position (common for CUBE/SPHERE)
         if not points:
             points = [[msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]]
-
-        self.interface.draw_debug_points(points, color, thickness, lifetime)
+        self.interface.draw_debug_points(points, colors, thickness, lifetime)
     
 def main(args=None):
     rclpy.init(args=args)
