@@ -4,8 +4,14 @@ This repository provides ROS 2 integration for [HoloOcean](https://github.com/by
 
 This ROS2 interface is designed to allow the user to configure a [HoloOcean scenario json file](https://byu-holoocean.github.io/holoocean-docs/v2.0.1/usage/scenarios.html#scenario-file-format) and then provide the interfaces to interact with the agent and enviornment with topics, services, and parameters. 
 
-## Prerequisites
+## Installation
 
+### Docker Setup
+See [Docker installation](docker/README.md) instructions for a fast and simple method to get started:
+- [Development](docker/dev/README.md) and [Runtime](docker/runtime/README.md) Options
+
+### Without Docker
+Prerequisites:
 - ROS 2 (tested on ROS 2 Humble Hawksbill)
 - HoloOcean installation:
   - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
@@ -36,6 +42,29 @@ To run the node:
 ```
 ros2 launch holoocean_main holoocean_launch.py
 ```
+
+## Examples:
+
+### Joystick Command
+Control the BlueROV or SV in HoloOcean with a the Joy Linux package 
+
+```bash
+ros2 launch holoocean_examples joy_launch.py
+```
+### Waypoint Control
+Control the SV with a list of defined waypoints
+
+```bash
+ros2 launch holoocean_examples waypoint_launch.py
+```
+
+### Command Launch
+Simple example of how to send depth, heading, speed commands to a torpedo AUV using the fossen controller. 
+
+```bash
+ros2 launch holoocean_examples command_launch.py
+```
+
 
 ## Node Overview
 
@@ -80,13 +109,6 @@ The following parameters can be set for `holoocean_node` using a launch file or 
 | `render_quality`   | int    | `1`     | Adjust render quality (0 = low, 1 = normal, 2 = high).                             |
 | `relative_path`    | bool   | `true`  | Whether to resolve `scenario_path` relative to the package directory.              |
 | `scenario_path`    | string | `""`    | Path to the scenario JSON file, relative or absolute depending on `relative_path`. |
-
----
-
-## Docker 
-
-See the docker folder for running holoocean with ros in a docker container.
-Runtime and development containers available. 
 
 ---
 

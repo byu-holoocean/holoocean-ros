@@ -1,6 +1,7 @@
 holoocean:
   holoocean_node:
     ros__parameters:
+      use_sim_time: true
       draw_arrow: true
       show_viewport: true
       relative_path: false

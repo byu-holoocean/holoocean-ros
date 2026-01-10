@@ -1,6 +1,7 @@
 holoocean:
   holoocean_node:
     ros__parameters:
+      use_sim_time: true
       draw_arrow: false
       show_viewport: true
       relative_path: true
@@ -11,5 +12,6 @@ holoocean:
   
   joy_holoocean:
     ros__parameters:
+      use_sim_time: true
       agent: 'bluerov'
       # agent: 'surface_vessel'

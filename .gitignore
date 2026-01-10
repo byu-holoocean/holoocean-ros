@@ -11,6 +11,8 @@ docker/dev/build_cache/build/*
 !docker/dev/build_cache/build/.gitkeep
 !docker/dev/build_cache/build/
 
+docker/runtime/tmp/*
+
 !*.xml
 !*.json
 *.tar
