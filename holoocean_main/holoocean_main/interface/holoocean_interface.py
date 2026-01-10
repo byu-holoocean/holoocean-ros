@@ -299,5 +299,17 @@ class HolooceanInterface():
 
         x_end = pos[0] + 3 * np.cos(heading_rad)
         y_end = pos[1] - 3 * np.sin(heading_rad)
-        self.env.draw_arrow(pos.tolist(), end=[x_end, y_end, pos[2]], color=[0,0,255], thickness=5, lifetime=self.get_period()+0.01)
+        self.env.draw_arrow(pos.tolist(), end=[x_end, y_end, pos[2]], color=[0,0,255], thickness=10, lifetime=self.get_period()+0.01)
+
+    def draw_debug_points(self, points, colors, thickness, lifetime):
+        # points: list of [x, y, z]
+        # color: [r, g, b] (0-255)
+        for i, point in enumerate(points):        # Issue while developing, unable to pass list of points, so drawing one at a time
+            color = colors[i]
+            self.env.draw_point(
+                loc=point,
+                color=color,
+                thickness=thickness,
+                lifetime=lifetime
+            )
 

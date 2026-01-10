@@ -1,0 +1,7 @@
+# sv_waypoints.yaml example file
+# [x, y] coordinates for waypoints
+waypoints:
+  - [25.0, 25.0]
+  - [-25.0, 25.0]
+  - [-25.0, -25.0]
+  - [25.0, -25.0]
