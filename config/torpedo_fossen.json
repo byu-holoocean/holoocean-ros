@@ -51,6 +51,10 @@
                 "ros_publish": true
             },
             {
+                "sensor_type": "PoseSensor",
+                "ros_publish": true
+            },
+            {
                 "sensor_type": "RotationSensor",
                 "ros_publish": true
             },

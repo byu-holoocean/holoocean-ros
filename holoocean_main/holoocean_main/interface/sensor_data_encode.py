@@ -3,6 +3,7 @@ from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
+from scipy.spatial.transform import Rotation
 import numpy as np
 
 # TODO make a not about how the Dynamics Sensor IMU is not in local frame
@@ -180,7 +181,7 @@ class DepthEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
 
-        self.message_type = PoseWithCovarianceStamped
+        self.message_type = Odometry
         self.cov = [0.0] * 36
 
         if self.config is not None:
@@ -189,9 +190,33 @@ class DepthEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = self.socket
+        msg.header.frame_id = 'map'
+        msg.child_frame_id = self.socket
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
+        return msg
+
+class PoseSensorEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = PoseWithCovarianceStamped
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+
+        rot_matrix = sensor_data[:3, :3]
+        quat = Rotation.from_matrix(rot_matrix).as_quat()
+
+        #Frame ID might be map
+        msg.pose.pose.position.x = float(sensor_data[1,3])
+        msg.pose.pose.position.y = float(sensor_data[2,3])
+        msg.pose.pose.position.z = float(sensor_data[3,3])
+        msg.pose.pose.orientation.x = float(quat[0])
+        msg.pose.pose.orientation.y = float(quat[1])
+        msg.pose.pose.orientation.z = float(quat[2])
+        msg.pose.pose.orientation.w = float(quat[3])
         return msg
 
 class LocationEncoder(SensorPublisher):
@@ -380,7 +405,8 @@ class GPSEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = self.socket
+        msg.header.frame_id = 'map'
+        msg.child_frame_id = self.socket
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
         msg.pose.pose.position.z = float(sensor_data[2])
@@ -509,5 +535,6 @@ encoders = {
     'MagnetometerSensor': MagneticFieldEncoder,
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
+    'PoseSensor': PoseSensorEncoder,
     # Add other sensor type encoders here...
 }

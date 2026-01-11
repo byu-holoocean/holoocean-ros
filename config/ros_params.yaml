@@ -8,4 +8,9 @@ holoocean:
       scenario_path: '/home/ue4/config/torpedo_fossen.json'  # Path in the container
       publish_commands: true
       # render_quality: 0     # Lowering render quality improves performance. Known bug that it overrides given FPS when this parameter is set. 
-      
+  
+  command_node:
+    ros__parameters:
+      use_sim_time: true
+      random: false
+      deep: false
