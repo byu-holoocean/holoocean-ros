@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y \
     locales \
     software-properties-common \
     curl \
+    sudo \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user 'ue4' with UID 1000
@@ -55,6 +57,10 @@ RUN apt update && apt install -y --no-install-recommends \
     ros-humble-ros-base \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Add user 'ue4' to sudoers with no password
+RUN usermod -aG sudo ue4 && \
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER ue4
 # Copy the python installation from the builder
