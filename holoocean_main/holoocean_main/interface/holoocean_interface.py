@@ -153,14 +153,14 @@ class HolooceanInterface():
 
             if agent_name in self.fossen_agents:
                 command = self.fossen.update(agent_name, self.state) #Calculate accelerations to be applied to HoloOcean agent
+                # Draw the autopilot arrows
+                self.draw_arrow(agent_name)
             else:
                 # This is the case for the general agent without fossen Dynamics
                 command = self.agent_commands[agent_name]
 
             self.env.act(agent_name, command)
 
-            # Draw the autopilot arrows
-            self.draw_arrow(agent_name)
             
 
         self.state = self.env.tick() #To publish data to ros correctly, we should only tick the enviornment once each step
