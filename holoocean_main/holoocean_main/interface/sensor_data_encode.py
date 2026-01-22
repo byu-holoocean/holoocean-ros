@@ -206,17 +206,21 @@ class PoseSensorEncoder(SensorPublisher):
         msg = self.message_type()
         msg.header.frame_id = self.socket
 
+        # Rotation
         rot_matrix = sensor_data[:3, :3]
         quat = Rotation.from_matrix(rot_matrix).as_quat()
 
-        #Frame ID might be map
-        msg.pose.pose.position.x = float(sensor_data[1,3])
-        msg.pose.pose.position.y = float(sensor_data[2,3])
-        msg.pose.pose.position.z = float(sensor_data[3,3])
+        # Position
+        msg.pose.pose.position.x = float(sensor_data[0, 3])
+        msg.pose.pose.position.y = float(sensor_data[1, 3])
+        msg.pose.pose.position.z = float(sensor_data[2, 3])
+
+        # Orientation
         msg.pose.pose.orientation.x = float(quat[0])
         msg.pose.pose.orientation.y = float(quat[1])
         msg.pose.pose.orientation.z = float(quat[2])
         msg.pose.pose.orientation.w = float(quat[3])
+
         return msg
 
 class LocationEncoder(SensorPublisher):
