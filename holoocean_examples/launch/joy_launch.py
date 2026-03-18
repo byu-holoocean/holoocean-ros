@@ -18,6 +18,7 @@ def generate_launch_description():
     holoocean_namespace = 'holoocean'
 
     # TODO make a flag to install the deps for the examples
+    # TODO make the parameters file a pass in argument to the launch file
     joy_node = launch_ros.actions.Node(
         package='joy_linux',
         executable='joy_linux_node',
