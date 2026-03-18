@@ -1,0 +1,180 @@
+<?xml version="1.0" ?>
+<robot name="couguv" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!--
+  @file couguv_holoocean.urdf.xacro
+  @brief URDF description for the CougUV AUV in HoloOcean.
+  @author Nelson Durrant
+  @date Jan 2026
+  -->
+
+  <!-- AUV constants-->
+  <xacro:property name="base_radius" value="0.06"/>
+  <xacro:property name="base_length" value="1.2"/>
+  <xacro:property name="handle_height" value="0.07"/>
+  <xacro:property name="handle_width" value="0.04"/>
+  <xacro:property name="handle_length" value="0.15"/>
+  <xacro:property name="tray_height" value="0.02"/>
+  <xacro:property name="tray_width" value="0.05"/>
+  <xacro:property name="tray_length" value="0.38"/>
+  <!-- How far back the fins are from the middle -->
+  <xacro:property name="fin_offset" value="0.375"/>
+  <xacro:property name="fin_height" value="0.09"/>
+  <xacro:property name="fin_width" value="0.015"/>
+  <xacro:property name="fin_length" value="0.09"/>
+
+  <material name="White">
+    <color rgba="1 1 1 1"/>
+  </material>
+
+  <material name="Blue">
+    <color rgba="0.196 0.6 0.8 1"/>
+  </material>
+
+  <material name="Gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+  <!-- Function to generate fins -->
+  <xacro:macro name="fin_macro" params="prefix rpy_str">
+    <joint name="${prefix}_fin_joint" type="revolute"> <parent link="com_link"/>
+      <child link="${prefix}_fin_link"/>
+      <origin xyz="${-fin_offset} 0 0" rpy="${rpy_str}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-pi/4}" upper="${pi/4}" effort="10.0" velocity="1.0"/>
+    </joint>
+
+    <link name="${prefix}_fin_link">
+      <visual>
+        <origin xyz="${-fin_length/2} 0 ${base_radius+fin_height/2}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${fin_length} ${fin_width} ${fin_height}"/>
+        </geometry>
+        <material name="White"/>
+      </visual>
+      </link>
+  </xacro:macro>
+
+  <!-- Account for HoloOcean COM offset -->
+  <link name="base_link"/>
+  <joint name="com_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="com_link"/>
+    <origin xyz="0.1 0 0.1" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Main AUV body -->
+  <link name="com_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_length-2*base_radius}"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+  </link>
+
+  <!-- Handle -->
+  <joint name="handle_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="handle_link"/>
+    <origin xyz="0 0 ${base_radius}" rpy="0 0 0"/>
+  </joint>
+  <link name="handle_link">
+    <visual>
+      <origin xyz="0 0 ${handle_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${handle_length} ${handle_width} ${handle_height}"/>
+      </geometry>
+      <material name="White"/>
+    </visual>
+  </link>
+
+  <!-- Weight tray -->
+  <joint name="tray_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="tray_link"/>
+    <origin xyz="0 0 -${base_radius}" rpy="0 0 0"/>
+  </joint>
+  <link name="tray_link">
+    <visual>
+      <origin xyz="0 0 ${-tray_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${tray_length} ${tray_width} ${tray_height}"/>
+      </geometry>
+      <material name="White"/>
+    </visual>
+  </link>
+
+  <!-- Front hull -->
+  <joint name="hull_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="hull_link"/>
+    <origin xyz="${(base_length-2*base_radius)/2} 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="hull_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${base_radius}"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+  </link>
+
+  <!-- Thruster -->
+  <joint name="thruster_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="thruster_link"/>
+     <origin xyz="${-(base_length-2*base_radius)/2} 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="thruster_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="${base_radius*0.9}" length="${2*base_radius}"/>
+      </geometry>
+      <material name="Gray"/>
+    </visual>
+  </link>
+
+  <!-- Fins -->
+  <xacro:fin_macro prefix="top"   rpy_str="0 0 0"/>
+  <xacro:fin_macro prefix="left"  rpy_str="${pi*2/3} 0 0"/>
+  <xacro:fin_macro prefix="right" rpy_str="${-pi*2/3} 0 0"/>
+
+  <!-- NOTE: These are exact HoloOcean socket locations as of 2.0.1 -->
+  
+  <!-- IMUSocket -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0.475 0 -0.035" rpy="${pi} 0 0"/>
+  </joint>
+  <link name="imu_link"/>
+
+  <!-- DepthSocket -->
+  <joint name="depth_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="depth_link"/>
+    <origin xyz="0.15 0 0.018" rpy="0 0 0"/>
+  </joint>
+  <link name="depth_link"/>
+
+  <!-- AcousticModemSocket -->
+  <joint name="modem_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="modem_link"/>
+    <origin xyz="0.35 0 -0.086" rpy="0 0 0"/>
+  </joint>
+  <link name="modem_link"/>
+
+  <!-- DVLSocket -->
+  <joint name="dvl_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="dvl_link"/>
+    <origin xyz="0.475 0 -0.035" rpy="${pi} 0 0"/>
+  </joint>
+  <link name="dvl_link"/>
+
+</robot>

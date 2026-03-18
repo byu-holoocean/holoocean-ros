@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bluerov2">
+
+  <!--
+  @file bluerov2_heavy.urdf.xacro
+  @brief URDF description for the BlueROV2 Heavy configuration.
+  @author Nelson Durrant
+  @date Jan 2026
+  -->
+
+  <xacro:property name="mass" value="9.5" />
+  <xacro:property name="ixx" value="0.16" />
+  <xacro:property name="iyy" value="0.17" />
+  <xacro:property name="izz" value="0.12" />
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://coug_description/urdf/bluerov2_heavy/meshes/bluerov2_heavy.dae" scale="0.025 0.025 0.025"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- TODO: Add real-world sensor frames -->
+
+</robot>

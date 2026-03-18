@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bluerov2">
+
+  <!--
+  @file bluerov2_holoocean.urdf.xacro
+  @brief URDF description for the BlueROV2 in HoloOcean.
+  @author Nelson Durrant
+  @date Jan 2026
+  -->
+
+  <xacro:property name="mass" value="9.5" />
+  <xacro:property name="ixx" value="0.16" />
+  <xacro:property name="iyy" value="0.17" />
+  <xacro:property name="izz" value="0.12" />
+
+  <!-- Fix for matching CougUV URDF -->
+  <link name="base_link"/>
+  <joint name="com_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="com_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Main BlueROV2 body -->
+  <link name="com_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://coug_description/urdf/bluerov2_holoocean/meshes/bluerov2.dae" scale="0.025 0.025 0.025"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- NOTE: These are exact HoloOcean socket locations as of 2.0.1 -->
+
+  <!-- IMUSocket -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0.11 0 0.065" rpy="${pi} 0 0"/>
+  </joint>
+  <link name="imu_link"/>
+
+  <!-- DepthSocket -->
+  <joint name="depth_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="depth_link"/>
+    <origin xyz="-0.17 0 0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="depth_link"/>
+
+  <!-- DVLSocket -->
+  <joint name="dvl_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="dvl_link"/>
+    <origin xyz="0 0.1 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="dvl_link"/>
+
+  <!-- CameraSocket -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.21 0 0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="camera_link"/>
+
+  <!-- SonarSocket -->
+  <joint name="sonar_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="sonar_link"/>
+    <origin xyz="0.15 0 0.14" rpy="0 0 0"/>
+  </joint>
+  <link name="sonar_link"/>
+
+  <!-- Fix for matching CougUV URDF -->
+  <joint name="modem_joint" type="fixed">
+    <parent link="com_link"/>
+    <child link="modem_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="modem_link"/>
+
+</robot>
