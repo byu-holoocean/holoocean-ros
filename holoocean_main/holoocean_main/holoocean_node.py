@@ -5,7 +5,7 @@ from holoocean_main.interface.holoocean_interface import *
 from ament_index_python.packages import get_package_share_directory
 import os
 
-from holoocean_interfaces.msg import ControlCommand, DesiredCommand, AgentCommand
+from holoocean_interfaces.msg import DesiredCommand, AgentCommand
 from holoocean_interfaces.srv import SetControlMode
 from visualization_msgs.msg import Marker
 from std_srvs.srv import Trigger
@@ -66,8 +66,8 @@ class HoloOceanNode(Node):
         
         ######## CUSTOM SUBSCRIBERS ############
         
-        self.ucommand_sub = self.create_subscription(ControlCommand, 'command/control', self.u_control_callback, 10)
-        self.ucommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.ucommand_sub = self.create_subscription(AgentCommand, 'command/control', self.u_control_callback, 10)
+        self.acommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
@@ -150,7 +150,7 @@ class HoloOceanNode(Node):
     
     def u_control_callback(self, msg):
         vehicle_name = msg.header.frame_id
-        u_control_list = list(msg.cs)  # Convert from array.array to list
+        u_control_list = list(msg.command)  # Convert from array.array to list
         self.interface.set_u_control(vehicle_name, u_control_list)
 
     def agent_command_callback(self, msg):

@@ -34,7 +34,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DepthSensor.msg"
   "msg/RGBCamera.msg"
   "msg/RangeFinderSensor.msg"
-  "msg/ControlCommand.msg"
   "msg/DesiredCommand.msg"
   "msg/AgentCommand.msg"
   "srv/SetControlMode.srv"

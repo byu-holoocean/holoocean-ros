@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, ControlCommand
+from holoocean_interfaces.msg import DVLSensorRange, AgentCommand
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -421,12 +421,12 @@ class CommandEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
         super().__init__(sensor_dict)
 
-        self.message_type = ControlCommand
+        self.message_type = AgentCommand
 
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.cs = sensor_data.tolist()
+        msg.command = sensor_data.tolist()
 
         return msg
     
