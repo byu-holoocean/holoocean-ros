@@ -45,10 +45,20 @@ def generate_launch_description():
         parameters=[params_file],
     )
 
+    camera_hud_node = launch_ros.actions.Node(
+        name='camera_hud',
+        package='holoocean_examples',
+        executable='camera_hud',
+        namespace=holoocean_namespace,
+        output='screen',
+        parameters=[{'agent_name': 'auv0'}],
+    )
+
     return LaunchDescription([
         holoocean_main_node,
         joy_holo,
         joy_node,
+        camera_hud_node,
     ])
 
 

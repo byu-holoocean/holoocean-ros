@@ -1,0 +1,111 @@
+# TODO add cougUV functionality
+# Add the ability to switch to FPV camera view of each agent, bumpers?
+
+holoocean:
+  holoocean_node:
+    ros__parameters:
+      use_sim_time: true
+      draw_arrow: false
+      show_viewport: false
+      relative_path: true
+      scenario_path: 'config/multi_agent_SU.json'
+      render_quality: 0
+
+  camera_hud:
+    ros__parameters:
+      use_sim_time: true
+      agent_name: 'auv0'
+
+  camera_hud_sv:
+    ros__parameters:
+      use_sim_time: true
+      agent_name: 'auv1'
+
+  # joy_linux device config
+  joy_node:
+    ros__parameters:
+      use_sim_time: true
+      dev: '/dev/input/js0'
+
+  # Joystick to HoloOcean node
+  # See https://wiki.ros.org/joy for button/axis indices on your controller.
+  joy_holoocean:
+    ros__parameters:
+      use_sim_time: true
+
+      # Arm / Disarm / Reset
+      button.arm:    11   # LS click
+      button.disarm: 10   # RS click
+      button.reset:  12   # Guide / Home
+
+      # Left stick
+      axis.vertical_left:   1
+      axis.horizontal_left: 0
+      # Right stick
+      axis.vertical_right:   3
+      axis.horizontal_right: 2
+      # Triggers, rest = 1.0, fully pressed = -1.0
+      axis.camera_up:   5   # RT, tilt camera up
+      axis.camera_down: 4   # LT, tilt camera down
+      # D-pad (BlueROV pitch/roll trim)
+      axis.dpad_vertical:   7
+      axis.dpad_horizontal: 6
+
+      # Camera
+      camera.pitch_rate: 2.0    # degrees per joystick callback
+      camera.pitch_max:  40.0   # maximum tilt in degrees
+
+      # Agents
+      # Three parallel arrays: names[i], types[i], buttons[i] define each agent.
+      # Press the corresponding button to switch to it.
+      # Supported types:
+      #   bluerov        - 8-thruster ROV         (publishes to command/agent)
+      #   surface_vessel - differential-thrust ASV (publishes to command/agent)
+      #   torpedo_auv    - FOSSEN fin+thruster AUV (publishes to command/control)
+      agents.names:   ['auv0', 'auv1', 'auv2']
+      agents.types:   ['bluerov', 'surface_vessel', 'torpedo_auv']
+      agents.buttons: [0, 1, 3]    # Xbox face buttons: A=0  B=1  Y=3
+      agents.default: 'auv0'
+
+  joy_node_wired:
+    ros__parameters:
+      use_sim_time: true
+      dev: '/dev/input/js1'
+
+  joy_holoocean_wired:
+    ros__parameters:
+      use_sim_time: true
+
+      # Arm / Disarm / Reset
+      button.arm:    7   # LS click
+      button.disarm: 6   # RS click
+      button.reset:  8   # Guide / Home
+
+      # Left stick
+      axis.vertical_left:   1
+      axis.horizontal_left: 0
+      # Right stick
+      axis.vertical_right:   4
+      axis.horizontal_right: 3
+      # Triggers, rest = 1.0, fully pressed = -1.0
+      axis.camera_up:   5   # RT, tilt camera up
+      axis.camera_down: 2   # LT, tilt camera down
+      # D-pad (BlueROV pitch/roll trim)
+      axis.dpad_vertical:   7
+      axis.dpad_horizontal: 6
+
+      # Camera
+      camera.pitch_rate: 2.0    # degrees per joystick callback
+      camera.pitch_max:  40.0   # maximum tilt in degrees
+
+      # Agents
+      # Three parallel arrays: names[i], types[i], buttons[i] define each agent.
+      # Press the corresponding button to switch to it.
+      # Supported types:
+      #   bluerov        - 8-thruster ROV         (publishes to command/agent)
+      #   surface_vessel - differential-thrust ASV (publishes to command/agent)
+      #   torpedo_auv    - FOSSEN fin+thruster AUV (publishes to command/control)
+      agents.names:   ['auv0', 'auv1', 'auv2']
+      agents.types:   ['bluerov', 'surface_vessel', 'torpedo_auv']
+      agents.buttons: [0, 1, 3]    # Xbox face buttons: A=0  B=1  Y=3
+      agents.default: 'auv1'
