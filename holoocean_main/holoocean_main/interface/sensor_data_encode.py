@@ -536,6 +536,7 @@ encoders = {
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     'RGBCamera': ImageEncoder,
+    'ViewportCapture': ImageEncoder,
     'MagnetometerSensor': MagneticFieldEncoder,
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,

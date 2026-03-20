@@ -36,6 +36,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RangeFinderSensor.msg"
   "msg/DesiredCommand.msg"
   "msg/AgentCommand.msg"
+  "msg/SensorCommand.msg"
   "srv/SetControlMode.srv"
   DEPENDENCIES std_msgs std_srvs
 )
