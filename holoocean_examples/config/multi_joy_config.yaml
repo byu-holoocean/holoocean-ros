@@ -1,5 +1,9 @@
-# TODO add cougUV functionality
 # Add the ability to switch to FPV camera view of each agent, bumpers?
+/holoocean/**:
+  ros__parameters:
+    relative_path: true
+    scenario_path: 'config/multi_agent.json'
+
 
 holoocean:
   holoocean_node:
@@ -7,8 +11,6 @@ holoocean:
       use_sim_time: true
       draw_arrow: false
       show_viewport: false
-      relative_path: true
-      scenario_path: 'config/multi_agent_SU.json'
       render_quality: 0
 
   camera_hud:
@@ -55,16 +57,7 @@ holoocean:
       camera.pitch_rate: 2.0    # degrees per joystick callback
       camera.pitch_max:  40.0   # maximum tilt in degrees
 
-      # Agents
-      # Three parallel arrays: names[i], types[i], buttons[i] define each agent.
-      # Press the corresponding button to switch to it.
-      # Supported types:
-      #   bluerov        - 8-thruster ROV         (publishes to command/agent)
-      #   surface_vessel - differential-thrust ASV (publishes to command/agent)
-      #   torpedo_auv    - FOSSEN fin+thruster AUV (publishes to command/control)
-      agents.names:   ['auv0', 'auv1', 'auv2']
-      agents.types:   ['bluerov', 'surface_vessel', 'torpedo_auv']
-      agents.buttons: [0, 1, 3]    # Xbox face buttons: A=0  B=1  Y=3
+      agents.buttons: [0, 1, 2, 3]    # Xbox face buttons: A=0  B=1  X=2  Y=3
       agents.default: 'auv0'
 
   joy_node_wired:
@@ -98,14 +91,5 @@ holoocean:
       camera.pitch_rate: 2.0    # degrees per joystick callback
       camera.pitch_max:  40.0   # maximum tilt in degrees
 
-      # Agents
-      # Three parallel arrays: names[i], types[i], buttons[i] define each agent.
-      # Press the corresponding button to switch to it.
-      # Supported types:
-      #   bluerov        - 8-thruster ROV         (publishes to command/agent)
-      #   surface_vessel - differential-thrust ASV (publishes to command/agent)
-      #   torpedo_auv    - FOSSEN fin+thruster AUV (publishes to command/control)
-      agents.names:   ['auv0', 'auv1', 'auv2']
-      agents.types:   ['bluerov', 'surface_vessel', 'torpedo_auv']
-      agents.buttons: [0, 1, 3]    # Xbox face buttons: A=0  B=1  Y=3
+      agents.buttons: [0, 1, 2, 3]    # Xbox face buttons: A=0  B=1  X=2  Y=3
       agents.default: 'auv1'

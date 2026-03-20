@@ -22,8 +22,10 @@ def generate_launch_description():
     joy_node = launch_ros.actions.Node(
         package='joy_linux',
         executable='joy_linux_node',
+        namespace=holoocean_namespace,
         name='joy_node',
         output='screen',
+        parameters=[params_file]
     )
     
     joy_holo = launch_ros.actions.Node(
