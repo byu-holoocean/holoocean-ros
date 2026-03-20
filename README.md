@@ -89,7 +89,7 @@ Loads a scenario JSON file, starts the HoloOcean environment, and ticks it in a 
 
 | Topic | Type | Description |
 |---|---|---|
-| `command/agent` | `AgentCommand` | Thruster/actuator commands for non-Fossen agents |
+| `command/agent` | `AgentCommand` | Thruster/actuator commands for all agents (for Fossen agents, messages with `frame_id` set to `body` are routed to the Fossen `set_u_control` interface) |
 | `command/sensor` | `SensorCommand` | Sensor configuration commands (e.g. camera rotation) |
 | `depth` | `DesiredCommand` | Depth setpoint for autopilot mode |
 | `heading` | `DesiredCommand` | Heading setpoint for autopilot mode |
