@@ -1,5 +1,5 @@
 services:
-  holoocean:
+  holoocean-ros:
     image: frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4-ros
     build:
       context: .
@@ -16,6 +16,7 @@ services:
       - ~/.local/share/holoocean:/home/ue4/.local/share/holoocean  # Mount the local share directory for persistent world installation
       - ../..:/home/ue4/ros2_ws/src/holoocean-ros
       - ./entrypoint.sh:/home/ue4/entrypoint.sh  # Mount the entrypoint script
+      - ./env.sh:/home/ue4/env.sh  # Mount the environment script
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME/.Xauthority:/root/.Xauthority:rw
       - ./build_cache/build:/home/ue4/holoocean_client/build:rw   # Permissions fix for when holoocean is built inside and outside the container
