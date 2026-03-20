@@ -3,7 +3,7 @@
 
 ROS 2 integration for [HoloOcean](https://github.com/byu-holoocean/HoloOcean), a high-fidelity marine robotics simulator. This package bridges the HoloOcean Python API to the ROS 2 network, exposing sensor data as topics and accepting control commands via subscriptions and services.
 
-## HoloOcean ROS (0.1) New Features
+## HoloOcean ROS (0.0.1) New Features
  - Improved joystick example
  - Multi-agent joystick exaple
  - Simplified agent commands
