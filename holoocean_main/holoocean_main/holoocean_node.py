@@ -66,8 +66,7 @@ class HoloOceanNode(Node):
         
         ######## CUSTOM SUBSCRIBERS ############
         
-        self.ucommand_sub = self.create_subscription(AgentCommand, 'command/control', self.u_control_callback, 10)
-        self.acommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.command_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
         self.sensor_command_sub = self.create_subscription(SensorCommand, 'command/sensor', self.sensor_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
@@ -148,16 +147,16 @@ class HoloOceanNode(Node):
             response.success = False
 
         return response
-    
-    def u_control_callback(self, msg):
-        vehicle_name = msg.header.frame_id
-        u_control_list = list(msg.command)  # Convert from array.array to list
-        self.interface.set_u_control(vehicle_name, u_control_list)
 
     def agent_command_callback(self, msg):
         vehicle_name = msg.header.frame_id
-        agent_command = np.array(msg.command)
-        self.interface.set_agent_command(vehicle_name, agent_command)
+        if vehicle_name in self.interface.fossen_agents:
+            # TODO make this be able to take in np array
+            u_control_list = list(msg.command)  # Convert from array.array to list
+            self.interface.set_u_control(vehicle_name, u_control_list)
+        else:
+            agent_command = np.array(msg.command)
+            self.interface.set_agent_command(vehicle_name, agent_command)
 
     def sensor_command_callback(self, msg):
         agent_name = msg.agent_name
