@@ -141,6 +141,23 @@ See the [ROS 2 bag documentation](https://docs.ros.org/en/humble/Tutorials/Begin
 - [HoloOcean documentation](https://byu-holoocean.github.io/holoocean-docs/)
 - [ROS 2 documentation](https://docs.ros.org/en/humble/index.html)
 
+## Citation
+
+If you use this package or HoloOcean in your research, please cite the relevant works. For this ROS interface:
+
+```bibtex
+@inproceedings{meyers2025testing,
+  title={Testing and Evaluation of Underwater Vehicle Using Hardware-in-the-Loop Simulation with HoloOcean},
+  author={Meyers, Braden and Mangelson, Joshua G},
+  booktitle={OCEANS 2025-Great Lakes},
+  pages={1--8},
+  year={2025},
+  organization={IEEE}
+}
+```
+
+For other HoloOcean works, see the [HoloOcean repository](https://github.com/byu-holoocean/HoloOcean) and [documentation](https://byu-holoocean.github.io/holoocean-docs/) for the full list of publications to cite.
+
 ---
 
 Developed by the [FRoStLab (Field Robotic Systems Lab)](https://frostlab.byu.edu/) at Brigham Young University.
