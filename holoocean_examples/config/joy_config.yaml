@@ -1,7 +1,7 @@
 /holoocean/**:
   ros__parameters:
     relative_path: true
-    scenario_path: 'config/surface_vessel.json'
+    scenario_path: 'config/blueROV.json'
 
 holoocean:
   holoocean_node:

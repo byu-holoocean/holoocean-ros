@@ -46,17 +46,25 @@ ros2 launch holoocean_main holoocean_launch.py
 ## Examples:
 
 ### Joystick Command
-Control the BlueROV or SV in HoloOcean with a the Joy Linux package 
+Control the BlueROV or SV in HoloOcean with a the Joy Linux package
 
 ```bash
 ros2 launch holoocean_examples joy_launch.py
 ```
+
+See [holoocean_examples/README.md](holoocean_examples/README.md) for full setup instructions, button mapping, and config reference.
+
+![Multi-Agent Joystick](media/MultiAgentJoystick.png)
+
+
 ### Waypoint Control
 Control the SV with a list of defined waypoints
 
 ```bash
 ros2 launch holoocean_examples waypoint_launch.py
 ```
+
+![Multi-Agent Joystick](media/WAMV_Waypoints.png)
 
 ### Command Launch
 Simple example of how to send depth, heading, speed commands to a torpedo AUV using the fossen controller. 
