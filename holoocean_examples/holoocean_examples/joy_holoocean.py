@@ -81,13 +81,8 @@ class AgentController:
         return cmd
 
     def agent_command(self, axes: list[float],
-                      axis_map: dict[str, int]) -> tuple[AgentCommand, bool]:
-        """Build an AgentCommand from joystick axes.
-
-        Returns (AgentCommand, use_control_publisher).
-        use_control_publisher=True means publish to command/control (FOSSEN),
-        False means publish to command/agent.
-        """
+                      axis_map: dict[str, int]) -> AgentCommand:
+        """Build an AgentCommand from joystick axes."""
         def ax(key: str) -> float:
             return _ax(axes, axis_map[key])
 
@@ -150,9 +145,7 @@ class AgentController:
         return _clamp(trim, -self.MAX_TRIM, self.MAX_TRIM)
 
 
-# ---------------------------------------------------------------------------
 #  ROS 2 node
-# ---------------------------------------------------------------------------
 
 class JoyToAgentCommand(Node):
     def __init__(self):

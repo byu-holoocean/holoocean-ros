@@ -41,9 +41,7 @@ class CameraHUDNode(Node):
 
         self.get_logger().info(f'Camera HUD ready  [{agent}]')
 
-    # ------------------------------------------------------------------
     #  Callbacks
-    # ------------------------------------------------------------------
 
     def _odom_cb(self, msg: Odometry):
         self.odom = msg
@@ -56,9 +54,7 @@ class CameraHUDNode(Node):
         out.header = msg.header
         self.pub.publish(out)
 
-    # ------------------------------------------------------------------
     #  Top-level draw
-    # ------------------------------------------------------------------
 
     def _draw_hud(self, frame: np.ndarray) -> np.ndarray:
         h, w = frame.shape[:2]
@@ -91,9 +87,7 @@ class CameraHUDNode(Node):
         cv2.addWeighted(overlay, 0.9, frame, 0.1, 0, frame)
         return frame
 
-    # ------------------------------------------------------------------
     #  Artificial horizon & pitch ladder
-    # ------------------------------------------------------------------
 
     def _draw_horizon(self, img, cx, cy, roll, pitch, h):
         roll_rad   = np.deg2rad(roll)
@@ -109,7 +103,7 @@ class CameraHUDNode(Node):
         hdir  = np.array([ cos_r,  sin_r])
         up_dir = np.array([ sin_r, -cos_r])
 
-        half = int(w * 0.65) if hasattr(self, '_w') else int(img.shape[1] * 0.65)
+        half = int(img.shape[1] * 0.65)
 
         # horizon centre (shifts down when pitch is positive / nose-up)
         hcx = cx
@@ -141,9 +135,7 @@ class CameraHUDNode(Node):
                 ly = int(mark_cy + mark_len * hdir[1]) + 4
                 cv2.putText(img, f'{abs(deg)}', (lx, ly), _FONT, 0.32, _G, 1, cv2.LINE_AA)
 
-    # ------------------------------------------------------------------
     #  Crosshair
-    # ------------------------------------------------------------------
 
     def _draw_crosshair(self, img, cx, cy):
         arm, gap = 18, 7
@@ -153,9 +145,7 @@ class CameraHUDNode(Node):
         cv2.line(img, (cx, cy + gap),       (cx, cy + arm + gap), _G, 2, cv2.LINE_AA)
         cv2.circle(img, (cx, cy), 2, _G, -1, cv2.LINE_AA)
 
-    # ------------------------------------------------------------------
     #  Roll arc (bank angle indicator, centred above crosshair)
-    # ------------------------------------------------------------------
 
     def _draw_roll_arc(self, img, cx, cy, roll):
         r = 80
@@ -186,9 +176,7 @@ class CameraHUDNode(Node):
         # Numeric roll value
         self._text(img, f'{roll:+.1f}', cx - 18, cy - r - 6, 0.35, _A)
 
-    # ------------------------------------------------------------------
     #  Heading tape
-    # ------------------------------------------------------------------
 
     def _draw_heading_tape(self, img, heading, w, h):
         tape_h = 36
@@ -222,9 +210,7 @@ class CameraHUDNode(Node):
         self._panel(img, mx - bw // 2, y1, mx + bw // 2, y1 + 20)
         self._text(img, f'{heading:05.1f}', mx - bw // 2 + 3, y1 + 14, 0.38, _A, 1)
 
-    # ------------------------------------------------------------------
     #  Depth gauge  (left side)
-    # ------------------------------------------------------------------
 
     def _draw_depth_gauge(self, img, depth, h):
         gx0, gx1 = 10, 62
@@ -253,9 +239,7 @@ class CameraHUDNode(Node):
         self._text(img, f'{depth:.1f}', gx0 + 2, ny - 1, 0.36, _A)
         self._text(img, 'm', gx0 + 18, gy1 + 14, 0.35, _G)
 
-    # ------------------------------------------------------------------
     #  Speed gauge  (right side, centred at zero, forward positive)
-    # ------------------------------------------------------------------
 
     def _draw_speed_gauge(self, img, spd_fwd, h, w):
         gx0, gx1 = w - 62, w - 10
@@ -288,9 +272,7 @@ class CameraHUDNode(Node):
         self._text(img, f'{spd_fwd:.2f}', gx0 + 2, ny - 1, 0.34, _A)
         self._text(img, 'm/s', gx0 + 2, gy1 + 14, 0.35, _G)
 
-    # ------------------------------------------------------------------
     #  Data panel  (bottom, right of depth gauge)
-    # ------------------------------------------------------------------
 
     def _draw_data_panel(self, img, pos, vel, ang, roll, pitch, heading, h, w):
         pw, ph = 180, 112
@@ -312,9 +294,7 @@ class CameraHUDNode(Node):
         for i, (line, color) in enumerate(lines):
             self._text(img, line, x0 + 5, y0 + 15 + i * 16, 0.36, color)
 
-    # ------------------------------------------------------------------
     #  Drawing helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _panel(img, x0, y0, x1, y1):

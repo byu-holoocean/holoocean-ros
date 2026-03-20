@@ -193,7 +193,7 @@ class HolooceanInterface():
             if "ticks_per_sec" in self.scenario:
                 return self.scenario['ticks_per_sec']
             else:
-                ValueError('ticks_per_sec not specified in scenario')
+                raise ValueError('ticks_per_sec not specified in scenario')
     
     def get_period(self):
         return 1.0/self.get_tick_rate()

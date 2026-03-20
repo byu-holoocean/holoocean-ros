@@ -12,7 +12,7 @@ See [Docker installation](docker/README.md) instructions for a fast and simple m
 
 ### Without Docker
 Prerequisites:
-- ROS 2 (tested on ROS 2 Humble Hawksbill)
+- ROS 2 (tested on ROS 2 Humble and Jazzy)
 - HoloOcean installation:
   - Source Code: [https://github.com/byu-holoocean/HoloOcean](https://github.com/byu-holoocean/HoloOcean)
   - Documentation: [HoloOcean Documentation](https://byu-holoocean.github.io/holoocean-docs/)

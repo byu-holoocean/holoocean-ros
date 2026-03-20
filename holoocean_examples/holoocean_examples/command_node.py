@@ -26,15 +26,6 @@ class CommandExample(Node):
             {'depth': 295.0, 'heading': 90.0, 'speed': 1200.0},
             {'depth': 290.0, 'heading': 70.0, 'speed': 1200.0},
             {'depth': 285.0, 'heading': 50.0, 'speed': 1200.0},
-            # {'depth': 20.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 12.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 18.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 22.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 8.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 0.1, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 14.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 19.0, 'heading': 90.0, 'speed': 2.0},
-            # {'depth': 25.0, 'heading': 90.0, 'speed': 2.0},
         ]
 
         self.predefined_sequence = [
@@ -64,19 +55,13 @@ class CommandExample(Node):
     
     def timer_callback(self):
         now = self.sim_clock.now()
-        # self.get_logger().info(f'Timer callback triggered  {now.nanoseconds} ns')
 
         if now - self.last_setpoint_time >= self.setpoint_interval:
             self.new_setpoint()
-        # else:
-        #     self.get_logger().info(f'Setpoint not yet ready: {now.nanoseconds} ns')
 
         if now - self.last_publish_time >= self.publish_interval and self.enabled:
             self.publish_callback()
             self.last_publish_time = now
-            # self.get_logger().info(f'set new publish time: {self.last_publish_time.nanoseconds} ns')
-        # else:
-        #     self.get_logger().info(f'Publish not yet ready: {now.nanoseconds} ns, {self.last_publish_time.nanoseconds} ns, enabled: {self.enabled}')
 
 
     def sequence_callback(self):
@@ -97,31 +82,31 @@ class CommandExample(Node):
         self.get_logger().info(f'New Setpoint: {self.depth}, Heading: {self.heading}, Speed: {self.speed}')
 
     def publish_callback(self):
-        # self.get_logger().info(f'Publishing Setpoint: {self.depth}, Heading: {self.heading}, Speed: {self.speed}')
         base_msg = DesiredCommand()
         base_msg.header.stamp = self.sim_clock.now().to_msg()
         # TODO parameterize this as holoocean vehicle
         base_msg.header.frame_id = 'auv0'
 
-        # TODO does base msg need to be copied?
-        depth_msg = base_msg
+        depth_msg = DesiredCommand()
+        depth_msg.header = base_msg.header
         depth_msg.data = self.depth
         self.depth_publisher.publish(depth_msg)
-        heading_msg = base_msg
+
+        heading_msg = DesiredCommand()
+        heading_msg.header = base_msg.header
         heading_msg.data = self.heading
         self.heading_publisher.publish(heading_msg)
-        speed_msg = base_msg
+
+        speed_msg = DesiredCommand()
+        speed_msg.header = base_msg.header
         speed_msg.data = self.speed
         self.speed_publisher.publish(speed_msg)
 
 
 def main(args=None):
     rclpy.init(args=args)
-
     command_node = CommandExample()
-
     rclpy.spin(command_node)
-
     command_node.destroy_node()
     rclpy.shutdown()
 
