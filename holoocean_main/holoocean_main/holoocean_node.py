@@ -1,11 +1,14 @@
 import threading
+import os
+from pathlib import Path
+
+import numpy as np
 import rclpy
 from rclpy.node import Node
-from holoocean_main.interface.holoocean_interface import *
+from holoocean_main.interface.holoocean_interface import HolooceanInterface
 from ament_index_python.packages import get_package_share_directory
-import os
 
-from holoocean_interfaces.msg import DesiredCommand, AgentCommand
+from holoocean_interfaces.msg import DesiredCommand, AgentCommand, SensorCommand
 from holoocean_interfaces.srv import SetControlMode
 from visualization_msgs.msg import Marker
 from std_srvs.srv import Trigger
@@ -66,8 +69,8 @@ class HoloOceanNode(Node):
         
         ######## CUSTOM SUBSCRIBERS ############
         
-        self.ucommand_sub = self.create_subscription(AgentCommand, 'command/control', self.u_control_callback, 10)
-        self.acommand_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.command_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
+        self.sensor_command_sub = self.create_subscription(SensorCommand, 'command/sensor', self.sensor_command_callback, 10)
 
         # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
@@ -147,17 +150,22 @@ class HoloOceanNode(Node):
             response.success = False
 
         return response
-    
-    def u_control_callback(self, msg):
-        vehicle_name = msg.header.frame_id
-        u_control_list = list(msg.command)  # Convert from array.array to list
-        self.interface.set_u_control(vehicle_name, u_control_list)
 
     def agent_command_callback(self, msg):
         vehicle_name = msg.header.frame_id
-        agent_command = np.array(msg.command)
-        self.interface.set_agent_command(vehicle_name, agent_command)
+        if vehicle_name in self.interface.fossen_agents:
+            # TODO make this be able to take in np array
+            u_control_list = list(msg.command)  # Convert from array.array to list
+            self.interface.set_u_control(vehicle_name, u_control_list)
+        else:
+            agent_command = np.array(msg.command)
+            self.interface.set_agent_command(vehicle_name, agent_command)
 
+    def sensor_command_callback(self, msg):
+        agent_name = msg.agent_name
+        sensor_name = msg.sensor_name
+        rotation = msg.rotation
+        self.interface.rotate_sensor(agent_name, sensor_name, rotation)
     
     def depth_callback(self, msg):
         vehicle_name = msg.header.frame_id 

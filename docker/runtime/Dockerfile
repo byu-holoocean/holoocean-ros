@@ -3,6 +3,7 @@
 # by someone who has accepted the Epic Games EULA.
 # Stage 1: Build ros packages and pip install holoocean
 FROM frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4-ros AS builder
+ARG ROS_DISTRO=humble
 
 USER root
 # Copy the client folder from the repository. 
@@ -16,10 +17,11 @@ COPY ./holoocean_interfaces ros2_ws/src/holoocean_interfaces
 COPY ./holoocean_main ros2_ws/src/holoocean_main
 
 WORKDIR /home/ue4/ros2_ws
-RUN bash -c "source /opt/ros/humble/setup.bash && colcon build"
+RUN bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build"
 
 # Stage 2: Minimal runtime image
 FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
+ARG ROS_DISTRO=humble
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/opt/venv/bin:$PATH"
@@ -47,16 +49,23 @@ RUN locale-gen en_US en_US.UTF-8 && \
 
 ENV LANG=en_US.UTF-8
 
-# Add ROS 2 Humble repository
+# Add ROS 2 repository
 RUN add-apt-repository universe && \
     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list
 
-# Install ROS 2 Humble
+# Install ROS 2
 RUN apt update && apt install -y --no-install-recommends \
-    ros-humble-ros-base \
+    ros-${ROS_DISTRO}-ros-base \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# ROS 2 packages for examples
+RUN apt update && apt install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-rqt-image-view \
+    ros-${ROS_DISTRO}-cv-bridge \
+    ros-${ROS_DISTRO}-joy-linux && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Add user 'ue4' to sudoers with no password
 RUN usermod -aG sudo ue4 && \
@@ -69,9 +78,10 @@ COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/pytho
 # Install the worlds
 # RUN python3 -c 'import holoocean; holoocean.install("TestWorlds")'
 RUN python3 -c 'import holoocean; holoocean.install("Ocean")'
+# RUN python3 -c 'import holoocean; holoocean.install("Ocean", branch="develop")'
 
 # Source ROS setup for all users via bashrc
-RUN echo "source /opt/ros/humble/setup.bash" >> /home/ue4/.bashrc
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/ue4/.bashrc
 
 COPY --from=builder /home/ue4/ros2_ws /home/ue4/ros2_ws
 RUN echo "source /home/ue4/ros2_ws/install/setup.bash" >> /home/ue4/.bashrc

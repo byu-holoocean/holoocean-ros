@@ -193,7 +193,7 @@ class HolooceanInterface():
             if "ticks_per_sec" in self.scenario:
                 return self.scenario['ticks_per_sec']
             else:
-                ValueError('ticks_per_sec not specified in scenario')
+                raise ValueError('ticks_per_sec not specified in scenario')
     
     def get_period(self):
         return 1.0/self.get_tick_rate()
@@ -242,7 +242,14 @@ class HolooceanInterface():
     def set_agent_command(self, vehicle, command):
         # TODO probably not the best way to do this but will work for now
         self.agent_commands[vehicle] = command
-
+    
+    def rotate_sensor(self, agent_name, sensor_name, rotation):
+        # Ensure rotation is list type:
+        if isinstance(rotation, np.ndarray):
+            rotation = rotation.tolist()
+        elif not isinstance(rotation, list):
+            raise ValueError(f"Rotation must be a list or numpy array, got {type(rotation)}")
+        self.env.agents[agent_name].sensors[sensor_name].rotate(rotation)
 
     def reset_enviornment(self, vehicle=None):
         if vehicle is None:

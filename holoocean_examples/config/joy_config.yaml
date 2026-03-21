@@ -1,17 +1,51 @@
+/holoocean/**:
+  ros__parameters:
+    relative_path: true
+    scenario_path: 'config/blueROV.json'
+
 holoocean:
   holoocean_node:
     ros__parameters:
       use_sim_time: true
       draw_arrow: false
       show_viewport: true
-      relative_path: true
-      scenario_path: 'config/blueROV.json'
-      # scenario_path: 'config/surface_vessel.json'
       # render_quality: 0
 
-  
+  camera_hud:
+    ros__parameters:
+      use_sim_time: true
+      agent_name: 'auv0'
+
+  # Find the mappings of the buttons for your controller here: https://wiki.ros.org/joy
   joy_holoocean:
     ros__parameters:
       use_sim_time: true
-      agent: 'bluerov'
-      # agent: 'surface_vessel'
+
+      # Arm / Disarm / Reset
+      button.arm:    7   # LS click
+      button.disarm: 6   # RS click
+      button.reset:  8   # Guide / Home
+
+      # Left stick
+      axis.vertical_left:   1
+      axis.horizontal_left: 0
+      # Right stick
+      axis.vertical_right:   4
+      axis.horizontal_right: 3
+      # Triggers, rest = 1.0, fully pressed = -1.0
+      axis.camera_up:   5   # RT, tilt camera up
+      axis.camera_down: 2   # LT, tilt camera down
+      # D-pad (BlueROV pitch/roll trim)
+      axis.dpad_vertical:   7
+      axis.dpad_horizontal: 6
+
+      # Camera
+      camera.pitch_rate: 2.0    # degrees per joystick callback
+      camera.pitch_max:  40.0   # maximum tilt in degrees
+
+      # Agents
+      # Names and types are loaded from the scenario file.
+      # buttons[i] maps to the agent at index i in the scenario agents list.
+      # Supported scenario agent_types: BlueROV2, HoveringAUV, SurfaceVessel, TorpedoAUV
+      agents.buttons: [0, 1, 2, 3]    # Xbox face buttons: A=0  B=1  X=2  Y=3
+      agents.default: 'auv0'

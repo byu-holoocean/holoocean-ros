@@ -4,9 +4,6 @@
 from launch import LaunchDescription
 import launch_ros.actions
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-import os
 from pathlib import Path
 
 def generate_launch_description():
@@ -18,11 +15,14 @@ def generate_launch_description():
     holoocean_namespace = 'holoocean'
 
     # TODO make a flag to install the deps for the examples
+    # TODO make the parameters file a pass in argument to the launch file
     joy_node = launch_ros.actions.Node(
         package='joy_linux',
         executable='joy_linux_node',
+        namespace=holoocean_namespace,
         name='joy_node',
         output='screen',
+        parameters=[params_file]
     )
     
     joy_holo = launch_ros.actions.Node(
@@ -44,10 +44,20 @@ def generate_launch_description():
         parameters=[params_file],
     )
 
+    camera_hud_node = launch_ros.actions.Node(
+        name='camera_hud',
+        package='holoocean_examples',
+        executable='camera_hud',
+        namespace=holoocean_namespace,
+        output='screen',
+        parameters=[params_file],
+    )
+
     return LaunchDescription([
         holoocean_main_node,
         joy_holo,
         joy_node,
+        camera_hud_node,
     ])
 
 

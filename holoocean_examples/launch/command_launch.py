@@ -18,13 +18,8 @@ def generate_launch_description():
     declare_params_file = DeclareLaunchArgument(
         'params_file',
         default_value=str(
-            Path(
-                os.path.join(
-                    get_package_share_directory('holoocean_examples'),
-                    'config/config.yaml'
-                )
-            )
-        ),
+            Path(os.path.join(get_package_share_directory('holoocean_examples'),
+                    'config/command_config.yaml'))),
         description='Full path to the ROS2 parameters file to use for the node',
     )
     params_file = LaunchConfiguration('params_file')

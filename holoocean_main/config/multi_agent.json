@@ -1,0 +1,70 @@
+{
+    "name": "BlueROV",
+    "package_name": "Ocean",
+    "world": "SimpleUnderwater",
+    "main_agent": "auv0",
+    "ticks_per_sec": 30,
+    "frames_per_sec": 30,
+    "agents": [
+        {
+        "agent_name": "auv0",
+        "agent_type": "BlueROV2",
+        "sensors": [
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": true
+
+            },
+            {
+                "sensor_type": "CameraSensor",
+                "ros_publish": true,
+                "socket": "Viewport",
+                "location": [0, 0, 0],
+                "rotation": [0, 0, 0],
+                "configuration": {
+                    "CaptureWidth": 1150,
+                    "CaptureHeight": 800,
+                    "FOVAngle": 70
+                }
+            }
+        ],
+        "control_scheme": 0,  
+        "location": [0,1,-3],
+        "rotation": [0,0,0]
+        },
+        {
+        "agent_name": "auv1",
+        "agent_type": "SurfaceVessel",
+        "sensors": [
+            {
+                "sensor_type": "DynamicsSensor",
+                "configuration": {
+                    "UseCOM": true,
+                    "UseRPY": false 
+                },
+                "ros_publish": true
+
+            },
+            {
+                "sensor_type": "CameraSensor",
+                "ros_publish": true,
+                "socket": "Viewport",
+                "location": [0, 0, 0],
+                "rotation": [0, 0, 0],
+                "configuration": {
+                    "CaptureWidth": 1150,
+                    "CaptureHeight": 800,
+                    "FOVAngle": 70
+                }
+            }
+        ],
+        "control_scheme": 0,  
+        "location": [0,1,0],
+        "rotation": [0,0,0]
+        }
+    ]
+}
