@@ -1,6 +1,6 @@
 # Use the specified base image
-FROM frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4
-ARG ROS_DISTRO=humble
+FROM frostlab/holoocean:2.0-dev-ubuntu24.04-cuda12.9
+ARG ROS_DISTRO=jazzy
 # Switch to root user to install dependencies
 USER root
 ENV DEBIAN_FRONTEND=noninteractive

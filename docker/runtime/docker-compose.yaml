@@ -1,6 +1,6 @@
 services:
   holoocean-ros-rt:
-    image: frostlab/holoocean:2.0-runtime-ubuntu22.04-cuda12.4-ros
+    image: frostlab/holoocean:2.0-runtime-ubuntu24.04-cuda12.9-ros
     build: 
       context: ../..
       dockerfile: docker/runtime/Dockerfile

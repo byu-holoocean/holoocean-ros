@@ -1,6 +1,6 @@
 services:
   holoocean-ros:
-    image: frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4-ros
+    image: frostlab/holoocean:2.0-dev-ubuntu24.04-cuda12.9-ros
     build:
       context: .
       dockerfile: Dockerfile

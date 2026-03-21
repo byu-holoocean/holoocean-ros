@@ -2,8 +2,8 @@
 # Any docker image with the Worlds installed can only be shared internally 
 # by someone who has accepted the Epic Games EULA.
 # Stage 1: Build ros packages and pip install holoocean
-FROM frostlab/holoocean:2.0-dev-ubuntu22.04-cuda12.4-ros AS builder
-ARG ROS_DISTRO=humble
+FROM frostlab/holoocean:2.0-dev-ubuntu24.04-cuda12.9-ros AS builder
+ARG ROS_DISTRO=jazzy
 
 USER root
 # Copy the client folder from the repository. 
@@ -20,8 +20,8 @@ WORKDIR /home/ue4/ros2_ws
 RUN bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build"
 
 # Stage 2: Minimal runtime image
-FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
-ARG ROS_DISTRO=humble
+FROM nvidia/cuda:12.9.1-runtime-ubuntu24.04
+ARG ROS_DISTRO=jazzy
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/opt/venv/bin:$PATH"
