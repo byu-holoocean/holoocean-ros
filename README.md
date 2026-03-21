@@ -5,8 +5,8 @@ ROS 2 integration for [HoloOcean](https://github.com/byu-holoocean/HoloOcean), a
 
 ## HoloOcean ROS (0.0.1) New Features
  - Improved joystick example
- - Multi-agent joystick exaple
- - Simplified agent commands
+ - Multi-agent joystick example
+ - Simplified agent commands (command/control topic deprecated, now command/agent)
  - Sensor rotation commands
  - Minor bug fixes and Docker improvements
 

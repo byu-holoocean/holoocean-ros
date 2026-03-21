@@ -32,6 +32,7 @@ RUN apt update && apt install -y --no-install-recommends \
 # ROS 2 packages for examples
 RUN apt update && apt install -y --no-install-recommends \
     ros-${ROS_DISTRO}-rqt-image-view \
+    ros-${ROS_DISTRO}-cv-bridge \
     ros-${ROS_DISTRO}-joy-linux && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

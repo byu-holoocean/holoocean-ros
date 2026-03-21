@@ -209,6 +209,9 @@ class JoyToAgentCommand(Node):
         if relative_path:
             scenario_path = os.path.join(
                 get_package_share_directory('holoocean_main'), scenario_path)
+        # Check path exists
+        if not os.path.isfile(scenario_path):
+            raise ValueError(f"Scenario file not found with path: {scenario_path}")
         with open(scenario_path, 'r') as f:
             scenario = json.load(f)
 

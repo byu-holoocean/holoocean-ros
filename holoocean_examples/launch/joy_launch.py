@@ -4,9 +4,6 @@
 from launch import LaunchDescription
 import launch_ros.actions
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-import os
 from pathlib import Path
 
 def generate_launch_description():
@@ -53,7 +50,7 @@ def generate_launch_description():
         executable='camera_hud',
         namespace=holoocean_namespace,
         output='screen',
-        parameters=[{'agent_name': 'auv0'}],
+        parameters=[params_file],
     )
 
     return LaunchDescription([
