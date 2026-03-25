@@ -1,0 +1,16 @@
+/holoocean/**:
+  ros__parameters:
+    relative_path: true
+    scenario_path: 'config/blueROV.json'
+
+holoocean:
+  holoocean_node:
+    ros__parameters:
+      use_sim_time: true
+      draw_arrow: false
+      show_viewport: true
+
+  twist_holoocean:
+    ros__parameters:
+      use_sim_time: true
+      agents.default: 'auv0'

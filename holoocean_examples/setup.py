@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'command_node = holoocean_examples.command_node:main',
             'joy_holoocean = holoocean_examples.joy_holoocean:main',
+            'twist_holoocean = holoocean_examples.twist_holoocean:main',
             'waypoint_follower = holoocean_examples.waypoint_follower:main',
             'camera_hud = holoocean_examples.camera_hud:main',
         ],

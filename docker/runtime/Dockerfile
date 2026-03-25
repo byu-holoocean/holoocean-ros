@@ -60,13 +60,6 @@ RUN apt update && apt install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ROS 2 packages for examples
-RUN apt update && apt install -y --no-install-recommends \
-    ros-${ROS_DISTRO}-rqt-image-view \
-    ros-${ROS_DISTRO}-cv-bridge \
-    ros-${ROS_DISTRO}-joy-linux && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
 # Add user 'ue4' to sudoers with no password
 RUN usermod -aG sudo ue4 && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -79,7 +72,15 @@ COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/pytho
 # RUN python3 -c 'import holoocean; holoocean.install("TestWorlds")'
 RUN python3 -c 'import holoocean; holoocean.install("Ocean")'
 # RUN python3 -c 'import holoocean; holoocean.install("Ocean", branch="develop")'
-
+    
+# ROS 2 packages for examples
+RUN apt update && apt install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-rqt-image-view \
+    ros-${ROS_DISTRO}-cv-bridge \
+    ros-${ROS_DISTRO}-teleop-twist-keyboard \
+    ros-${ROS_DISTRO}-joy-linux && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+    
 # Source ROS setup for all users via bashrc
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/ue4/.bashrc
 
