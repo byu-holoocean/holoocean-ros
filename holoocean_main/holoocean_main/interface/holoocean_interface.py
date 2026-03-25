@@ -103,6 +103,7 @@ class HolooceanInterface():
                             encoder_class = encoders.get(full_type)
                             sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                             sensor_copy['sensor_name'] = full_name
+                            sensor_copy['sensor_type'] = full_type  
                             sensor_copy['agent_name'] = agent['agent_name']
                             sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
                             self.sensors.append(encoder_class(sensor_copy))
