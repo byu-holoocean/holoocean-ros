@@ -23,7 +23,7 @@
                 "sensor_type": "DVLSensor",
                 "ros_publish": true,
                 "configuration":{
-                    "VelSigma": [0.1,0.1,0.1,0.1]
+                    "VelSigma": 0.1
                 }
             },
             {
