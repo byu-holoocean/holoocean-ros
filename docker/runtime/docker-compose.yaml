@@ -7,6 +7,7 @@ services:
     container_name: holoocean-ros
     user: ue4
     runtime: nvidia
+    privileged: true  # Required for certain ROS2 features and hardware access
     environment:
       - DISPLAY=$DISPLAY
       - NVIDIA_VISIBLE_DEVICES=all
@@ -14,6 +15,6 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ../../config:/home/ue4/config  # Mount the config directory
-      - /dev/shm:/dev/shm  # Use /dev/shm for ROS2 inter-device communication
+      - /dev:/dev  # Use /dev for hardware access, /dev/shm for ROS2 inter-device communication
     network_mode: host  # Connect to host network for ROS interfaces outside of the container
     command: ["tail", "-f", "/dev/null"]  # Keep the container running
