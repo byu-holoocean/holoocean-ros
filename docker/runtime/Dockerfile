@@ -9,8 +9,7 @@ USER root
 # Copy the client folder from the repository. 
 # This assumes the build context is set to root of the holoocean-ros package
 COPY ./docker/runtime/tmp/HoloOcean/client /tmp/holoocean_client
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install /tmp/holoocean_client
+RUN python3 -m pip install /tmp/holoocean_client
 
 COPY ./holoocean_examples ros2_ws/src/holoocean_examples
 COPY ./holoocean_interfaces ros2_ws/src/holoocean_interfaces
@@ -22,14 +21,15 @@ RUN bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build"
 # Stage 2: Minimal runtime image
 FROM nvidia/cuda:12.9.1-runtime-ubuntu24.04
 ARG ROS_DISTRO=jazzy
+ARG PYTHON_VERSION=python3.12
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/opt/venv/bin:$PATH"
 ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 RUN apt-get update && apt-get install -y \
-    python3 \
-    libgl1-mesa-glx libglu1-mesa \
+    ${PYTHON_VERSION} \
+    libgl1 libglu1-mesa \
     libxrandr2 libxinerama1 libxcursor1 libxi6 \
     libsm6 libxext6 libxrender1 \
     libvulkan1 \
@@ -40,8 +40,11 @@ RUN apt-get update && apt-get install -y \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user 'ue4' with UID 1000
-RUN useradd -m -u 1000 ue4
+# Create non-root user 'ue4' with UID 1001
+RUN useradd -m -u 1001 ue4
+
+# Remove forced non global pip installations
+RUN rm -rf /usr/lib/${PYTHON_VERSION}/EXTERNALLY-MANAGED || true
 
 # ROS2 Installation
 RUN locale-gen en_US en_US.UTF-8 && \
@@ -66,13 +69,14 @@ RUN usermod -aG sudo ue4 && \
 
 USER ue4
 # Copy the python installation from the builder
-COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --from=builder /usr/local/lib/${PYTHON_VERSION}/dist-packages /usr/local/lib/${PYTHON_VERSION}/dist-packages
 
 # Install the worlds
 # RUN python3 -c 'import holoocean; holoocean.install("TestWorlds")'
 RUN python3 -c 'import holoocean; holoocean.install("Ocean")'
 # RUN python3 -c 'import holoocean; holoocean.install("Ocean", branch="develop")'
-    
+
+USER root
 # ROS 2 packages for examples
 RUN apt update && apt install -y --no-install-recommends \
     ros-${ROS_DISTRO}-rqt-image-view \
@@ -80,7 +84,8 @@ RUN apt update && apt install -y --no-install-recommends \
     ros-${ROS_DISTRO}-teleop-twist-keyboard \
     ros-${ROS_DISTRO}-joy-linux && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-    
+
+USER ue4
 # Source ROS setup for all users via bashrc
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/ue4/.bashrc
 
@@ -88,7 +93,7 @@ COPY --from=builder /home/ue4/ros2_ws /home/ue4/ros2_ws
 RUN echo "source /home/ue4/ros2_ws/install/setup.bash" >> /home/ue4/.bashrc
 
 # Permissions fix for holoocean package content
-RUN chown -R ue4:ue4 /usr/local/python3.10 || true
+RUN chown -R ue4:ue4 /usr/local/${PYTHON_VERSION} || true
 
 WORKDIR /home/ue4/ros2_ws
 CMD ["/bin/bash"]
