@@ -1,16 +1,35 @@
 ## Holocean launch file 
 # Author: Braden Meyers
 
+import os
 from launch import LaunchDescription
 import launch_ros.actions
 from ament_index_python.packages import get_package_share_directory
 from pathlib import Path
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     print('Launching HoloOcean Vehicle Simulation')
 
-    base = Path(get_package_share_directory('holoocean_examples'))
-    params_file = base / 'config' / 'multi_joy_config.yaml'
+    # Declare a launch argument for the parameter file
+    default_params_file = str(
+        Path(
+            os.path.join(
+                get_package_share_directory('holoocean_examples'),
+                'config/multi_joy_config.yaml'
+            )
+        )
+    )
+    print('Using default parameter file: ', default_params_file)
+    declare_params_file = DeclareLaunchArgument(
+        'params_file',
+        default_value=default_params_file,
+        description='Full path to the ROS2 parameters file to use for the node',
+    )
+
+    # Get the launch configuration for the parameter file
+    params_file = LaunchConfiguration('params_file')
 
     holoocean_namespace = 'holoocean'
 
@@ -99,6 +118,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        declare_params_file,
         holoocean_main_node,
         joy_holo,
         joy_node,
