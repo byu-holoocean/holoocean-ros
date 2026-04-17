@@ -48,6 +48,8 @@ class AgentController:
         self.camera_pitch: float = 0.0
         self.pitch_trim: float = 0.0
         self.roll_trim: float = 0.0
+        self._cam_up_initialized: bool = False    # <-- add
+        self._cam_down_initialized: bool = False  # <-- add
 
     def reset(self):
         """Reset all stateful values (call on disarm or simulation reset)."""
@@ -64,7 +66,19 @@ class AgentController:
         """
         up_raw   = _ax(axes, cam_up_idx)
         down_raw = _ax(axes, cam_down_idx)
-        up   = (1.0 - up_raw)   / 2.0   # 0.0 at rest → 1.0 fully pressed
+
+        # Wait until each trigger has been seen at rest (≥ 0.9) before trusting it.
+        if up_raw >= 0.9:
+            self._cam_up_initialized = True
+        if down_raw >= 0.9:
+            self._cam_down_initialized = True
+
+        if not self._cam_up_initialized:
+            up_raw = 1.0
+        if not self._cam_down_initialized:
+            down_raw = 1.0
+        
+        up   = (1.0 - up_raw)   / 2.0   # 1.0 at rest → -1.0 fully pressed. Starts at 0.0
         down = (1.0 - down_raw) / 2.0
 
         if not self.has_camera or (up <= 0.05 and down <= 0.05):
