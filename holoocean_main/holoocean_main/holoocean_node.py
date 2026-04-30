@@ -8,7 +8,7 @@ from rclpy.node import Node
 from holoocean_main.interface.holoocean_interface import HolooceanInterface
 from ament_index_python.packages import get_package_share_directory
 
-from holoocean_interfaces.msg import DesiredCommand, AgentCommand, SensorCommand
+from holoocean_interfaces.msg import DesiredCommand, AgentCommand, SensorCommand, AcousticBeaconSend
 from holoocean_interfaces.srv import SetControlMode
 from visualization_msgs.msg import Marker
 from std_srvs.srv import Trigger
@@ -76,6 +76,9 @@ class HoloOceanNode(Node):
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
         self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.heading_callback, 10)
         self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, 10)
+
+        self.acoustic_send_sub = self.create_subscription(AcousticBeaconSend, 'acoustic_beacon_send', 
+                                                          self.send_acoustic_message_callback, 10)
 
         self.clock_pub = self.create_publisher(Clock, '/clock', 10)
 
@@ -167,6 +170,13 @@ class HoloOceanNode(Node):
         rotation = msg.rotation
         self.interface.rotate_sensor(agent_name, sensor_name, rotation)
     
+    def send_acoustic_message_callback(self, msg):
+        self.interface.send_acoustic_message(
+            msg.from_beacon,
+            msg.to_beacon,
+            msg.msg_type,
+            msg.msg_data)
+
     def depth_callback(self, msg):
         vehicle_name = msg.header.frame_id 
         self.interface.set_depth(vehicle_name, msg.data)

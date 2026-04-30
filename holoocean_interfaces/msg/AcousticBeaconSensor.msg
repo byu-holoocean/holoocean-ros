@@ -1,14 +1,19 @@
 # AcousticBeaconSensor message
-# Contains timestamp, message type, beacon information, azimuth, elevation, range, and z-coordinate
 
 # Timestamp in nanoseconds
-int64 timestamp
+std_msgs/Header header
 
 # Message type
 string msg_type
 
-# Beacon ID
+# From Beacon ID
 int32 from_beacon
+
+# To Beacon ID
+int32 to_beacon
+
+# payload
+uint8[] msg_data
 
 # Azimuth in radians
 float32 azimuth

@@ -30,6 +30,7 @@ endif()
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DVLSensorRange.msg"
   "msg/AcousticBeaconSensor.msg"
+  "msg/AcousticBeaconSend.msg"
   "msg/ImagingSonar.msg"
   "msg/DepthSensor.msg"
   "msg/RGBCamera.msg"
