@@ -133,7 +133,8 @@ class MultiSensorPublisher(ABC):
                 f"Using '{socket_a}' as the published frame_id."
             )
 
-        self.socket = f"{agent_name}/{socket_a}" if socket_a else "base_link"
+        socket_name = socket_a if socket_a else "base_link"
+        self.socket = f"{agent_name}/{socket_name}"
 
         self.publisher = None
 
