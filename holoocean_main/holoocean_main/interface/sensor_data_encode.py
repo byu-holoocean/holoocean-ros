@@ -417,7 +417,13 @@ class DynamicsGTEncoder(DynamicsEncoder):
         # Extract orientation as a rotation matrix
         if rpy:
             roll, pitch, yaw = sensor_data[15], sensor_data[16], sensor_data[17]
-            rot_matrix = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+            rotation = Rotation.from_euler('xyz', [roll, pitch, yaw])
+            rot_matrix = rotation.as_matrix()
+            quat = rotation.as_quat()
+            msg.pose.pose.orientation.x = float(quat[0])
+            msg.pose.pose.orientation.y = float(quat[1])
+            msg.pose.pose.orientation.z = float(quat[2])
+            msg.pose.pose.orientation.w = float(quat[3])
         else:
             x, y, z, w = sensor_data[15], sensor_data[16], sensor_data[17], sensor_data[18]
             rot_matrix = Rotation.from_quat([x, y, z, w]).as_matrix()
