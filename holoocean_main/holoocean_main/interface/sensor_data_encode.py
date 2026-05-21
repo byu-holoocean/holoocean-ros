@@ -12,7 +12,7 @@ UNKNOWN_COV = -1
 # TODO make a note about how the Dynamics Sensor IMU is not in local frame. Also no gravity vector
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
-    'DynamicsSensor': ['Odom', 'IMU'],
+    'DynamicsSensor': ['Odom', 'IMU', 'GT'],
     'IMUSensor': ['', 'Bias']
     # TODO add Camera sensor and info topic
 }
@@ -378,6 +378,7 @@ class DynamicsEncoder(SensorPublisher):
         msg.child_frame_id = self.socket + "_world"
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
+            # TODO should try and think of a better solution. 
         elif len(sensor_data) != 19:
             raise TypeError("Dynamics data is not the expected shape for ROS publishing")
 
@@ -402,6 +403,42 @@ class DynamicsEncoder(SensorPublisher):
         msg.twist.covariance = self.cov
 
         return msg
+
+class DynamicsGTEncoder(DynamicsEncoder):
+    # Uses DynamicsEncoder init
+    
+    def encode(self, sensor_data):
+        rpy = len(sensor_data) == 18
+        msg = super().encode(sensor_data)
+        
+        # Convert velcoties from world frame to local frame using the orientation
+        # Extract orientation as a rotation matrix
+        if rpy:
+            roll, pitch, yaw = sensor_data[15], sensor_data[16], sensor_data[17]
+            rot_matrix = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+        else:
+            x, y, z, w = sensor_data[15], sensor_data[16], sensor_data[17], sensor_data[18]
+            rot_matrix = Rotation.from_quat([x, y, z, w]).as_matrix()
+            
+        # Extract linear and angular velocities in world frame
+        linear_vel_world = np.array(sensor_data[3:6])
+        angular_vel_world = np.array(sensor_data[12:15])
+        # Transform velocities to local frame
+        linear_vel_local = rot_matrix.T @ linear_vel_world
+        angular_vel_local = rot_matrix.T @ angular_vel_world
+        # Update message with local frame velocities
+        msg.twist.twist.linear.x = float(linear_vel_local[0])
+        msg.twist.twist.linear.y = float(linear_vel_local[1])
+        msg.twist.twist.linear.z = float(linear_vel_local[2])
+
+        msg.twist.twist.angular.x = float(angular_vel_local[0])
+        msg.twist.twist.angular.y = float(angular_vel_local[1])
+        msg.twist.twist.angular.z = float(angular_vel_local[2]) 
+
+        msg.child_frame_id = self.socket  
+
+        return msg
+        
 
 class DynamicsIMUEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
@@ -600,6 +637,7 @@ encoders = {
     'VelocitySensor': VelocityEncoder,
     'DynamicsSensorOdom': DynamicsEncoder,
     'DynamicsSensorIMU': DynamicsIMUEncoder,
+    'DynamicsSensorGT': DynamicsGTEncoder,
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     'RGBCamera': ImageEncoder,
