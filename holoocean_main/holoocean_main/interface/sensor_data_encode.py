@@ -413,7 +413,7 @@ class DynamicsGTEncoder(DynamicsEncoder):
         rpy = len(sensor_data) == 18
         msg = super().encode(sensor_data)
         
-        # Convert velcoties from world frame to local frame using the orientation
+        # Convert velocities from world frame to local frame using the orientation
         # Extract orientation as a rotation matrix
         if rpy:
             roll, pitch, yaw = sensor_data[15], sensor_data[16], sensor_data[17]
