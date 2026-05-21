@@ -30,28 +30,26 @@ class HoloOceanNode(Node):
         super().__init__('holoocean_node')
         
         self.declare_parameter('publish_commands', True)
-        publish_commands = self.get_parameter('publish_commands').get_parameter_value().bool_value
         self.declare_parameter('show_viewport', True)
-        show_viewport = self.get_parameter('show_viewport').get_parameter_value().bool_value
-        # NOTE: Maybe move this to the ros message to draw the arrow or not
         self.declare_parameter('draw_arrow', True)
-        draw_arrow = self.get_parameter('draw_arrow').get_parameter_value().bool_value
-
-        self.declare_parameter('draw_waypoints', False)
-
-        draw_waypoints = self.get_parameter('draw_waypoints').get_parameter_value().bool_value
-
-
         self.declare_parameter('render_quality', -1)
-        render_quality = self.get_parameter('render_quality').get_parameter_value().integer_value
+        self.declare_parameter('relative_path', True)
+        self.declare_parameter('scenario_path', '')
+        self.declare_parameter('map_frame', 'holoocean_map')
+
+        publish_commands = self.get_parameter('publish_commands').value
+        show_viewport = self.get_parameter('show_viewport').value
+        # NOTE: Maybe move this to the ros message to draw the arrow or not
+        draw_arrow = self.get_parameter('draw_arrow').value
+        render_quality = self.get_parameter('render_quality').value
+        relative_path = self.get_parameter('relative_path').value
+        scenario_path = self.get_parameter('scenario_path').value
+        map_frame = self.get_parameter('map_frame').value
+
         # Set Render quality to None because of bug with frames per sec set to false when render quality is set
         if render_quality == -1:
             render_quality = None 
 
-        self.declare_parameter('relative_path', True)
-        relative_path = self.get_parameter('relative_path').get_parameter_value().bool_value
-        self.declare_parameter('scenario_path', '')
-        scenario_path = self.get_parameter('scenario_path').get_parameter_value().string_value
         if scenario_path == '':
             raise ValueError("The 'scenario_path' parameter cannot be blank.")
         if relative_path:
@@ -63,28 +61,24 @@ class HoloOceanNode(Node):
 
         ######## START HOLOOCEAN INTERFACE ###########
         #TODO dont pass the node to the interface instead have the publishers created in the node with a function
-        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow, render_quality=render_quality)
+        self.interface = HolooceanInterface(config_file, node=self, publish_commands=publish_commands, show_viewport=show_viewport, arrow_flag=draw_arrow, render_quality=render_quality, map_frame=map_frame)
 
         self.accel = np.array(np.zeros(6),float)
         
         ######## CUSTOM SUBSCRIBERS ############
-        
         self.command_sub = self.create_subscription(AgentCommand, 'command/agent', self.agent_command_callback, 10)
         self.sensor_command_sub = self.create_subscription(SensorCommand, 'command/sensor', self.sensor_command_callback, 10)
-
-        # TODO seperate ROS and Holoocean stuff by making functions in the node that call the interface
         self.depth_sub = self.create_subscription(DesiredCommand, 'depth', self.depth_callback, 10)
         self.heading_sub = self.create_subscription(DesiredCommand, 'heading', self.heading_callback, 10)
         self.speed_sub = self.create_subscription(DesiredCommand, 'speed', self.speed_callback, 10)
-
-        self.clock_pub = self.create_publisher(Clock, '/clock', 10)
-
         self.debug_points_sub = self.create_subscription(Marker, 'debug/points', self.debug_points_callback, 10)
+
+        # Publishers
+        self.clock_pub = self.create_publisher(Clock, '/clock', 10)
 
         # Services
         self.reset_srv = self.create_service(Trigger, 'reset', self.reset)
         self.control_mode_srv = self.create_service(SetControlMode, 'control_mode', self.control_mode_callback)
-
 
         # Start the simulation ticking in a background thread
         self._sim_running = True
@@ -92,8 +86,6 @@ class HoloOceanNode(Node):
         self.tick_thread.start()
 
         self.get_logger().info('HoloOcean simulation thread started.')
-
-
 
     def sim_loop(self):
         """Run the simulation step in a thread, using Unreal's internal timing."""
@@ -124,9 +116,6 @@ class HoloOceanNode(Node):
 
         self.clock_pub.publish(time_msg)
         
-
-
-    # TODO create TF Transform publisher
     def reset(self, request, response):
         # TODO reset just one agent
         self.interface.reset_enviornment()

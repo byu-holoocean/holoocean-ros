@@ -9,12 +9,18 @@ import numpy as np
 PERFECT_COV = 1e-9
 UNKNOWN_COV = -1
 
-# TODO make a not about how the Dynamics Sensor IMU is not in local frame
+# TODO make a note about how the Dynamics Sensor IMU is not in local frame. Also no gravity vector
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
-    'DynamicsSensor': ['Odom', 'IMU'],
+    'DynamicsSensor': ['Odom', 'IMU', 'GT'],
     'IMUSensor': ['', 'Bias']
     # TODO add Camera sensor and info topic
+}
+
+# Pairs of sensor types that, when both present on an agent, produce an additional combined topic.
+# Key: (primary_sensor_type, secondary_sensor_type), Value: combined encoder name
+combined_sensor_pairs = {
+    ('IMUSensor', 'DynamicsSensor'): 'IMUDynamics',
 }
 
 def _build_covariance(dim, cov=None, sigma=None):
@@ -95,14 +101,45 @@ class SensorPublisher(ABC):
             self.socket = sensor_dict['socket']
         else:
             self.socket = "base_link"
-        
+
         self.socket = self.agent_name + "/" + self.socket
+        self.map_frame = sensor_dict.get('map_frame', 'holoocean_map')
 
         self.publisher = None
 
 
     @abstractmethod
     def encode(self, sensor_data):
+        pass
+
+
+class MultiSensorPublisher(ABC):
+    """Publisher that merges data from two simulator sensors into one message."""
+
+    def __init__(self, name, agent_name, sensor_dicts):
+        self.name = name
+        self.type = name
+        self.agent_name = agent_name
+        self.state_names = [d['state_name'] for d in sensor_dicts]
+
+        socket_a = sensor_dicts[0].get('socket', '')
+        socket_b = sensor_dicts[1].get('socket', '')
+        if socket_a != socket_b:
+            # TODO: For now this is OK because socket doesnt matter for orientation but should change
+            # and maybe error out
+            print(
+                f"WARNING: MultiSensorPublisher '{name}' for agent '{agent_name}': "
+                f"sensors have different sockets ('{socket_a}' vs '{socket_b}'). "
+                f"Using '{socket_a}' as the published frame_id."
+            )
+
+        socket_name = socket_a if socket_a else "base_link"
+        self.socket = f"{agent_name}/{socket_name}"
+
+        self.publisher = None
+
+    @abstractmethod
+    def encode(self, sensor_data_a, sensor_data_b):
         pass
 
 class IMUEncoder(SensorPublisher):
@@ -241,7 +278,7 @@ class DepthEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'holoocean_map'
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
@@ -339,10 +376,11 @@ class DynamicsEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = self.message_type()
         # TODO would need to check if UseCOM flag is set.
-        msg.header.frame_id = 'holoocean_map'
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket + "_world"
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
+            # TODO should try and think of a better solution. 
         elif len(sensor_data) != 19:
             raise TypeError("Dynamics data is not the expected shape for ROS publishing")
 
@@ -367,6 +405,48 @@ class DynamicsEncoder(SensorPublisher):
         msg.twist.covariance = self.cov
 
         return msg
+
+class DynamicsGTEncoder(DynamicsEncoder):
+    # Uses DynamicsEncoder init
+    
+    def encode(self, sensor_data):
+        rpy = len(sensor_data) == 18
+        msg = super().encode(sensor_data)
+        
+        # Convert velocities from world frame to local frame using the orientation
+        # Extract orientation as a rotation matrix
+        if rpy:
+            roll, pitch, yaw = sensor_data[15], sensor_data[16], sensor_data[17]
+            rotation = Rotation.from_euler('xyz', [roll, pitch, yaw])
+            rot_matrix = rotation.as_matrix()
+            quat = rotation.as_quat()
+            msg.pose.pose.orientation.x = float(quat[0])
+            msg.pose.pose.orientation.y = float(quat[1])
+            msg.pose.pose.orientation.z = float(quat[2])
+            msg.pose.pose.orientation.w = float(quat[3])
+        else:
+            x, y, z, w = sensor_data[15], sensor_data[16], sensor_data[17], sensor_data[18]
+            rot_matrix = Rotation.from_quat([x, y, z, w]).as_matrix()
+            
+        # Extract linear and angular velocities in world frame
+        linear_vel_world = np.array(sensor_data[3:6])
+        angular_vel_world = np.array(sensor_data[12:15])
+        # Transform velocities to local frame
+        linear_vel_local = rot_matrix.T @ linear_vel_world
+        angular_vel_local = rot_matrix.T @ angular_vel_world
+        # Update message with local frame velocities
+        msg.twist.twist.linear.x = float(linear_vel_local[0])
+        msg.twist.twist.linear.y = float(linear_vel_local[1])
+        msg.twist.twist.linear.z = float(linear_vel_local[2])
+
+        msg.twist.twist.angular.x = float(angular_vel_local[0])
+        msg.twist.twist.angular.y = float(angular_vel_local[1])
+        msg.twist.twist.angular.z = float(angular_vel_local[2]) 
+
+        msg.child_frame_id = self.socket  
+
+        return msg
+        
 
 class DynamicsIMUEncoder(SensorPublisher):
     def __init__(self, sensor_dict):
@@ -415,7 +495,7 @@ class GPSEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'holoocean_map' # TODO get this from a param
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
@@ -528,7 +608,30 @@ class LaserScanEncoder(SensorPublisher):
 
         return msg
 
-# Define other encoders similarly...
+class IMUDynamicsEncoder(MultiSensorPublisher):
+    """Combines IMUSensor (noisy accel/gyro) with DynamicsSensor (orientation)."""
+
+    def __init__(self, name, agent_name, sensor_dicts):
+        super().__init__(name, agent_name, sensor_dicts)
+        self.message_type = Imu
+        # sensor_dicts[0] = IMUSensor, sensor_dicts[1] = DynamicsSensor
+        self.imu_encoder = IMUEncoder(sensor_dicts[0])
+        self.dyn_encoder = DynamicsIMUEncoder(sensor_dicts[1])
+
+    def encode(self, imu_data, dynamics_data):
+        imu_msg = self.imu_encoder.encode(imu_data)
+        dyn_msg = self.dyn_encoder.encode(dynamics_data)
+
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        msg.orientation = dyn_msg.orientation
+        msg.orientation_covariance = dyn_msg.orientation_covariance
+        msg.linear_acceleration = imu_msg.linear_acceleration
+        msg.linear_acceleration_covariance = imu_msg.linear_acceleration_covariance
+        msg.angular_velocity = imu_msg.angular_velocity
+        msg.angular_velocity_covariance = imu_msg.angular_velocity_covariance
+
+        return msg
 
 
 encoders = {
@@ -542,6 +645,7 @@ encoders = {
     'VelocitySensor': VelocityEncoder,
     'DynamicsSensorOdom': DynamicsEncoder,
     'DynamicsSensorIMU': DynamicsIMUEncoder,
+    'DynamicsSensorGT': DynamicsGTEncoder,
     'GPSSensor': GPSEncoder,
     'ControlCommand': CommandEncoder,
     'RGBCamera': ImageEncoder,
@@ -550,5 +654,6 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
+    'IMUDynamics': IMUDynamicsEncoder,
     # Add other sensor type encoders here...
 }

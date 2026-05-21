@@ -6,5 +6,6 @@ holoocean:
       relative_path: true
       scenario_path: 'config/torpedo_fossen.json'
       publish_commands: true
+      map_frame: 'holoocean_map'
       # render_quality: 0
       

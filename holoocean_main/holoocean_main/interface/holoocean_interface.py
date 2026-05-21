@@ -2,7 +2,10 @@ import numpy as np
 import holoocean
 
 from pathlib import Path
-from holoocean_main.interface.sensor_data_encode import encoders, multi_publisher_sensors
+from holoocean_main.interface.sensor_data_encode import (
+    encoders, multi_publisher_sensors,
+    combined_sensor_pairs, MultiSensorPublisher,
+)
 from holoocean.fossen_dynamics.fossen_interface import FossenInterface, get_vehicle_model
 
 
@@ -12,7 +15,7 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True, render_quality=None):
+    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True, render_quality=None, map_frame='holoocean_map'):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
@@ -23,6 +26,7 @@ class HolooceanInterface():
         self.node = node
         self.publish_commands = publish_commands
         self.arrow_flag = arrow_flag
+        self.map_frame = map_frame
 
         # TODO error handling to make sure its a json format?
         scenario_path = Path(scenario_path)
@@ -80,7 +84,7 @@ class HolooceanInterface():
         scenario = self.scenario
 
         for agent in scenario["agents"]:
-            #For each agent the control surface commands can be published 
+            #For each agent the control surface commands can be published
             agent_name = agent['agent_name']
             if self.publish_commands and (agent_name in self.fossen_agents):
                 encoder_class = encoders.get("ControlCommand")
@@ -91,28 +95,52 @@ class HolooceanInterface():
                 config['state_name'] = 'ControlCommand'
                 self.sensors.append(encoder_class(config))
 
+            # socket -> {sensor_type: sensor_dict} for combined publisher matching
+            ros_sensors_by_socket = {}
+
             for sensor in agent["sensors"]:
                 if sensor['ros_publish']:
                     sensor_type = sensor['sensor_type']
-                    
+                    socket = sensor.get('socket', '')
+
+                    if socket not in ros_sensors_by_socket:
+                        ros_sensors_by_socket[socket] = {}
+                    ros_sensors_by_socket[socket][sensor_type] = sensor
+
                     if sensor_type in multi_publisher_sensors:
                         for suffix in multi_publisher_sensors[sensor_type]:
                             full_type = f"{sensor['sensor_type']}{suffix}"
                             full_name = f"{sensor['sensor_name']}{suffix}"
-                            
+
                             encoder_class = encoders.get(full_type)
                             sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                             sensor_copy['sensor_name'] = full_name
-                            sensor_copy['sensor_type'] = full_type  
+                            sensor_copy['sensor_type'] = full_type
                             sensor_copy['agent_name'] = agent['agent_name']
                             sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
+                            sensor_copy.setdefault('map_frame', self.map_frame)
                             self.sensors.append(encoder_class(sensor_copy))
                     else:
                         sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                         sensor_copy['agent_name'] = agent['agent_name']
                         sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
+                        sensor_copy.setdefault('map_frame', self.map_frame)
                         encoder = encoders[sensor['sensor_type']]
                         self.sensors.append(encoder(sensor_copy))
+
+            for socket, sensors_at_socket in ros_sensors_by_socket.items():
+                for (type_a, type_b), combined_name in combined_sensor_pairs.items():
+                    if type_a in sensors_at_socket and type_b in sensors_at_socket:
+                        dict_a = sensors_at_socket[type_a].copy()
+                        dict_a['agent_name'] = agent_name
+                        dict_a['state_name'] = dict_a['sensor_name']
+
+                        dict_b = sensors_at_socket[type_b].copy()
+                        dict_b['agent_name'] = agent_name
+                        dict_b['state_name'] = dict_b['sensor_name']
+
+                        encoder_class = encoders[combined_name]
+                        self.sensors.append(encoder_class(combined_name, agent_name, [dict_a, dict_b]))
         
     
     def create_publishers(self):
@@ -126,7 +154,12 @@ class HolooceanInterface():
         for sensor in self.sensors:
             try:
                 agent_state = self.get_agent_state(sensor.agent_name)
-                msg = sensor.encode(agent_state[sensor.state_name])
+
+                if isinstance(sensor, MultiSensorPublisher):
+                    data = [agent_state[sn] for sn in sensor.state_names]
+                    msg = sensor.encode(*data)
+                else:
+                    msg = sensor.encode(agent_state[sensor.state_name])
 
                 # Header
                 msg.header.stamp.sec = int(state['t'])  # Set seconds part from state['t']
