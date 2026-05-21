@@ -9,12 +9,18 @@ import numpy as np
 PERFECT_COV = 1e-9
 UNKNOWN_COV = -1
 
-# TODO make a not about how the Dynamics Sensor IMU is not in local frame
+# TODO make a note about how the Dynamics Sensor IMU is not in local frame. Also no gravity vector
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
     'DynamicsSensor': ['Odom', 'IMU'],
     'IMUSensor': ['', 'Bias']
     # TODO add Camera sensor and info topic
+}
+
+# Pairs of sensor types that, when both present on an agent, produce an additional combined topic.
+# Key: (primary_sensor_type, secondary_sensor_type), Value: combined encoder name
+combined_sensor_pairs = {
+    ('IMUSensor', 'DynamicsSensor'): 'IMUDynamics',
 }
 
 def _build_covariance(dim, cov=None, sigma=None):
@@ -95,7 +101,7 @@ class SensorPublisher(ABC):
             self.socket = sensor_dict['socket']
         else:
             self.socket = "base_link"
-        
+
         self.socket = self.agent_name + "/" + self.socket
 
         self.publisher = None
@@ -103,6 +109,35 @@ class SensorPublisher(ABC):
 
     @abstractmethod
     def encode(self, sensor_data):
+        pass
+
+
+class MultiSensorPublisher(ABC):
+    """Publisher that merges data from two simulator sensors into one message."""
+
+    def __init__(self, name, agent_name, sensor_dicts):
+        self.name = name
+        self.type = name
+        self.agent_name = agent_name
+        self.state_names = [d['state_name'] for d in sensor_dicts]
+
+        socket_a = sensor_dicts[0].get('socket', '')
+        socket_b = sensor_dicts[1].get('socket', '')
+        if socket_a != socket_b:
+            # TODO: For now this is OK because socket doesnt matter for orientation but should change
+            # and maybe error out
+            print(
+                f"WARNING: MultiSensorPublisher '{name}' for agent '{agent_name}': "
+                f"sensors have different sockets ('{socket_a}' vs '{socket_b}'). "
+                f"Using '{socket_a}' as the published frame_id."
+            )
+
+        self.socket = f"{agent_name}/{socket_a}" if socket_a else "base_link"
+
+        self.publisher = None
+
+    @abstractmethod
+    def encode(self, sensor_data_a, sensor_data_b):
         pass
 
 class IMUEncoder(SensorPublisher):
@@ -528,7 +563,30 @@ class LaserScanEncoder(SensorPublisher):
 
         return msg
 
-# Define other encoders similarly...
+class IMUDynamicsEncoder(MultiSensorPublisher):
+    """Combines IMUSensor (noisy accel/gyro) with DynamicsSensor (orientation)."""
+
+    def __init__(self, name, agent_name, sensor_dicts):
+        super().__init__(name, agent_name, sensor_dicts)
+        self.message_type = Imu
+        # sensor_dicts[0] = IMUSensor, sensor_dicts[1] = DynamicsSensor
+        self.imu_encoder = IMUEncoder(sensor_dicts[0])
+        self.dyn_encoder = DynamicsIMUEncoder(sensor_dicts[1])
+
+    def encode(self, imu_data, dynamics_data):
+        imu_msg = self.imu_encoder.encode(imu_data)
+        dyn_msg = self.dyn_encoder.encode(dynamics_data)
+
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        msg.orientation = dyn_msg.orientation
+        msg.orientation_covariance = dyn_msg.orientation_covariance
+        msg.linear_acceleration = imu_msg.linear_acceleration
+        msg.linear_acceleration_covariance = imu_msg.linear_acceleration_covariance
+        msg.angular_velocity = imu_msg.angular_velocity
+        msg.angular_velocity_covariance = imu_msg.angular_velocity_covariance
+
+        return msg
 
 
 encoders = {
@@ -550,5 +608,6 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
+    'IMUDynamics': IMUDynamicsEncoder,
     # Add other sensor type encoders here...
 }
