@@ -15,7 +15,7 @@ class HolooceanInterface():
     Lists sensors and formats sensor data
     '''
 
-    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True, render_quality=None):
+    def __init__(self, scenario_path, node=None, show_viewport=True, publish_commands=True, arrow_flag=True, render_quality=None, map_frame='holoocean_map'):
         """
         Initialize holoocean enviornment with a path to a json file for the scenario
         Create the vehicle object and the dynamics object
@@ -26,6 +26,7 @@ class HolooceanInterface():
         self.node = node
         self.publish_commands = publish_commands
         self.arrow_flag = arrow_flag
+        self.map_frame = map_frame
 
         # TODO error handling to make sure its a json format?
         scenario_path = Path(scenario_path)
@@ -117,11 +118,13 @@ class HolooceanInterface():
                             sensor_copy['sensor_type'] = full_type
                             sensor_copy['agent_name'] = agent['agent_name']
                             sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
+                            sensor_copy.setdefault('map_frame', self.map_frame)
                             self.sensors.append(encoder_class(sensor_copy))
                     else:
                         sensor_copy = sensor.copy()  # Create a copy of the sensor dictionary
                         sensor_copy['agent_name'] = agent['agent_name']
                         sensor_copy['state_name'] = sensor['sensor_name']  # Need the name to pull the data out of the state
+                        sensor_copy.setdefault('map_frame', self.map_frame)
                         encoder = encoders[sensor['sensor_type']]
                         self.sensors.append(encoder(sensor_copy))
 

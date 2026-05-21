@@ -103,6 +103,7 @@ class SensorPublisher(ABC):
             self.socket = "base_link"
 
         self.socket = self.agent_name + "/" + self.socket
+        self.map_frame = sensor_dict.get('map_frame', 'holoocean_map')
 
         self.publisher = None
 
@@ -276,7 +277,7 @@ class DepthEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'holoocean_map'
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket
         msg.pose.pose.position.z = float(sensor_data[0])
         msg.pose.covariance = self.cov
@@ -374,7 +375,7 @@ class DynamicsEncoder(SensorPublisher):
     def encode(self, sensor_data):
         msg = self.message_type()
         # TODO would need to check if UseCOM flag is set.
-        msg.header.frame_id = 'holoocean_map'
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket + "_world"
         if len(sensor_data) == 18:
             sensor_data.append(-100) # Should error out if mistakenly trying to use it as a quaternion
@@ -487,7 +488,7 @@ class GPSEncoder(SensorPublisher):
 
     def encode(self, sensor_data):
         msg = self.message_type()
-        msg.header.frame_id = 'holoocean_map' # TODO get this from a param
+        msg.header.frame_id = self.map_frame
         msg.child_frame_id = self.socket
         msg.pose.pose.position.x = float(sensor_data[0])
         msg.pose.pose.position.y = float(sensor_data[1])
