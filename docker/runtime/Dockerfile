@@ -9,7 +9,7 @@ USER root
 # Copy the client folder from the repository.
 # This assumes the build context is set to root of the holoocean-ros package
 COPY ./docker/runtime/tmp/HoloOcean/client /tmp/holoocean_client
-RUN python3 -m pip install /tmp/holoocean_client
+RUN python3 -m pip install "numpy<2" "scipy<1.16" /tmp/holoocean_client
 
 COPY ./holoocean_examples ros2_ws/src/holoocean_examples
 COPY ./holoocean_interfaces ros2_ws/src/holoocean_interfaces
