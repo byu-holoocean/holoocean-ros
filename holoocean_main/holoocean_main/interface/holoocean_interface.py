@@ -60,7 +60,7 @@ class HolooceanInterface():
         # TODO this could be simplified but on the holoocean side
         # By creating the fossen models on the holoocean side
         self.fossen_agents = [agent["agent_name"] for agent in self.scenario.get("agents", []) if "fossen_model" in agent]
-        self.fossen = FossenInterface(self.fossen_agents, self.scenario)
+        self.fossen = FossenInterface(self.fossen_agents, self.scenario, multi_agent=self.multi_agent_scenario)
 
 
     def check_multi_agent(self):
