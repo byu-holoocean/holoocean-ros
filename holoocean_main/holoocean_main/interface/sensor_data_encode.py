@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
+from sensor_msgs.msg import Imu, Image, CameraInfo, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor
@@ -10,7 +10,8 @@ import numpy as np
 multi_publisher_sensors = {
     'DVLSensor': ['Velocity', 'Range'],
     'DynamicsSensor': ['Odom', 'IMU'],
-    'IMUSensor': ['', 'Bias']
+    'IMUSensor': ['', 'Bias'],
+    'DepthCamera': ['Depth', 'Info', 'Image']
     # TODO add Camera sensor and info topic
 }
 
@@ -555,6 +556,57 @@ class AcousticBeaconEncoder(SensorPublisher):
 
         return msg
 
+class DepthCameraDepthEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = Image
+
+    def encode(self, sensor_data):
+        depth = sensor_data["depth"].astype(np.float32)
+
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        msg.height, msg.width = depth.shape
+        msg.encoding = "32FC1"
+        msg.is_bigendian = 0
+        msg.step = msg.width * 4
+        msg.data = depth.tobytes()
+
+        return msg
+
+class DepthCameraInfoEncoder(SensorPublisher):
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+
+        self.message_type = CameraInfo
+
+        self.fov = 90.0
+        if self.config is not None and 'FovAngle' in self.config:
+            self.fov = float(self.config['FovAngle'])
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        msg.header.frame_id = self.socket
+        msg.height, msg.width = sensor_data["depth"].shape
+        msg.distortion_model = "plumb_bob"
+        msg.d = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+        # FovAngle is the horizontal FOV, and the pixels are square
+        fx = fy = (msg.width / 2.0) / np.tan(np.radians(self.fov) / 2.0)
+        cx = msg.width / 2.0
+        cy = msg.height / 2.0
+
+        msg.k = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]
+        msg.r = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        msg.p = [fx, 0.0, cx, 0.0, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+        return msg
+
+class DepthCameraImageEncoder(ImageEncoder):
+    def encode(self, sensor_data):
+        return super().encode(sensor_data["image"])
+
 
 # Define other encoders similarly...
 
@@ -578,6 +630,9 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
-    'AcousticBeaconSensor': AcousticBeaconEncoder
+    'AcousticBeaconSensor': AcousticBeaconEncoder,
+    'DepthCameraDepth': DepthCameraDepthEncoder,
+    'DepthCameraInfo': DepthCameraInfoEncoder,
+    'DepthCameraImage': DepthCameraImageEncoder
     # Add other sensor type encoders here...
 }
