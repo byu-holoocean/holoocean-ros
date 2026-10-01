@@ -320,3 +320,7 @@ class HolooceanInterface():
                 lifetime=lifetime
             )
 
+    def send_acoustic_message(self, id_from:int, id_to:int, msg_type:str, msg_data):
+        # Instructs the HoloOcean environment to send an acoustic message
+        self.env.send_acoustic_message(id_from, id_to, msg_type, msg_data)
+
