@@ -43,6 +43,7 @@ class AgentController:
         self.camera_pitch_rate = camera_pitch_rate
         self.camera_pitch_max = camera_pitch_max
         self.has_camera = False
+        self.camera_sensor = None
 
         # Mutable state
         self.camera_pitch: float = 0.0
@@ -76,7 +77,7 @@ class AgentController:
                                     self.camera_pitch_max)
         cmd = SensorCommand()
         cmd.agent_name  = self.name
-        cmd.sensor_name = self.CAMERA_SENSOR
+        cmd.sensor_name = self.camera_sensor
         cmd.rotation    = [0.0, self.camera_pitch, 0.0]
         return cmd
 
@@ -234,9 +235,13 @@ class JoyToAgentCommand(Node):
 
         for i, (name, atype, agent) in enumerate(zip(names, types, scenario_agents)):
             ctrl = AgentController(name, atype, pitch_rate, pitch_max)
-            ctrl.has_camera = any(
-                s.get('sensor_type') == 'CameraSensor' for s in agent.get('sensors', [])
-            )
+            camera_sensors = [
+                s.get('sensor_name')
+                for s in agent.get('sensors', [])
+                if s.get('sensor_type') == 'CameraSensor'
+            ]
+            ctrl.has_camera = len(camera_sensors) > 0
+            ctrl.camera_sensor = camera_sensors[0] if camera_sensors else None
             self.controllers[name] = ctrl
             if i < len(buttons):
                 self.button_to_agent[int(buttons[i])] = ctrl
