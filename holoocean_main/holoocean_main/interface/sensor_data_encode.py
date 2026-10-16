@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor
+from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor, ProfilingSonar
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -555,9 +555,31 @@ class AcousticBeaconEncoder(SensorPublisher):
 
         return msg
 
+class ProfilingSonarEncoder(SensorPublisher):
+    # For Single Beam ProfilingSonar and GPUProfilingSonar
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+        self.message_type = ProfilingSonar
+        self.config = sensor_dict["configuration"]
 
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        sonar = np.asarray(sensor_data, dtype=np.float32)
+
+        if sonar.ndim != 2:
+            raise ValueError(f"Expected 2D ProfilingSonar data, got {sonar.shape}")
+
+        msg.header.frame_id = self.socket
+        msg.bins_range = sonar.shape[0]
+        msg.bins_azimuth = sonar.shape[1]
+        msg.range_min = float(self.config["RangeMin"])
+        msg.range_max = float(self.config["RangeMax"])
+        msg.azimuth = float(self.config["Azimuth"])
+        msg.elevation = float(self.config["Elevation"])
+        msg.data = sonar.ravel(order="C").tolist()
+
+        return msg
 # Define other encoders similarly...
-
 
 encoders = {
     'IMUSensor': IMUEncoder,
@@ -578,6 +600,9 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
-    'AcousticBeaconSensor': AcousticBeaconEncoder
+    'AcousticBeaconSensor': AcousticBeaconEncoder,
+    'ProfilingSonar': ProfilingSonarEncoder,
+    'GPUProfilingSonar': ProfilingSonarEncoder,
+    'RaycastProfilingSonar': ProfilingSonarEncoder
     # Add other sensor type encoders here...
 }
