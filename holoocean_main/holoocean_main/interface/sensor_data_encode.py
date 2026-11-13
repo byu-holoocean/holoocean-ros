@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+import array
 from sensor_msgs.msg import Imu, Image, MagneticField, LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3Stamped, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor
+from holoocean_interfaces.msg import DVLSensorRange, AgentCommand, AcousticBeaconSensor, SonarImage
 from scipy.spatial.transform import Rotation
 import numpy as np
 
@@ -555,9 +556,48 @@ class AcousticBeaconEncoder(SensorPublisher):
 
         return msg
 
+class SonarImageEncoder(SensorPublisher):
+    # For 2D (range x azimuth) sonar output, e.g. the Profiling sonars
+    def __init__(self, sensor_dict):
+        super().__init__(sensor_dict)
+        self.message_type = SonarImage
+
+        # require them up front instead of failing silently in encode().
+        required = ["RangeMin", "RangeMax", "Azimuth", "Elevation"]
+        config = self.config or {}
+        missing = [key for key in required if key not in config]
+        if missing:
+            raise ValueError(
+                f"Sensor '{self.name}' ({self.type}) on agent '{self.agent_name}' "
+                f"is missing {missing} in its configuration block. "
+                f"These must be set in the scenario to publish a SonarImage."
+            )
+
+        self.range_min = float(config["RangeMin"])
+        self.range_max = float(config["RangeMax"])
+        self.azimuth = float(config["Azimuth"])
+        self.elevation = float(config["Elevation"])
+
+    def encode(self, sensor_data):
+        msg = self.message_type()
+        sonar = np.asarray(sensor_data, dtype=np.float32)
+
+        if sonar.ndim != 2:
+            raise ValueError(f"Expected 2D sonar image data, got {sonar.shape}")
+
+        msg.header.frame_id = self.socket
+        msg.bins_range = sonar.shape[0]
+        msg.bins_azimuth = sonar.shape[1]
+        msg.range_min = self.range_min
+        msg.range_max = self.range_max
+        msg.azimuth = self.azimuth
+        msg.elevation = self.elevation
+        msg.data = array.array('f', sonar.tobytes(order="C"))
+
+        return msg
+
 
 # Define other encoders similarly...
-
 
 encoders = {
     'IMUSensor': IMUEncoder,
@@ -578,6 +618,9 @@ encoders = {
     'CameraSensor': ImageEncoder,
     'RangeFinderSensor': LaserScanEncoder,
     'PoseSensor': PoseSensorEncoder,
-    'AcousticBeaconSensor': AcousticBeaconEncoder
+    'AcousticBeaconSensor': AcousticBeaconEncoder,
+    'ProfilingSonar': SonarImageEncoder,
+    'GPUProfilingSonar': SonarImageEncoder,
+    'RaycastProfilingSonar': SonarImageEncoder
     # Add other sensor type encoders here...
 }
